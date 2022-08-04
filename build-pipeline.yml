@@ -11,8 +11,8 @@ resources:
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '0521b03f-3aaf-411b-9ad9-1137bd2b12ac'
-  imageRepository: 'containerImage'
-  containerRegistry: '$(pondropContainerRegistry)'
+  imageRepository: 'store'
+  containerRegistry: 'pondropacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
 
