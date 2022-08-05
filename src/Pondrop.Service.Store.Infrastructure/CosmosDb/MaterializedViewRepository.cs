@@ -26,7 +26,9 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         IOptions<CosmosConfiguration> config,
         ILogger<MaterializedViewRepository<T>> logger)
     {
-        _containerName = typeof(T).Name.ToLowerInvariant().Replace("entity", "_entities");
+        var nameChars = typeof(T).Name.ToCharArray();
+        nameChars[0] = char.ToLower(nameChars[0]);
+        _containerName = new string(nameChars);
 
         _eventRepository = eventRepository;
         _logger = logger;
@@ -51,7 +53,7 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         {
             if (_container is null)
             {
-                _database = await _cosmosClient.CreateDatabaseIfNotExistsAsync(_config.DatabaseName);
+                _database = await _cosmosClient.CreateDatabaseIfNotExistsAsync($"{_config.DatabaseName}_materialized");
             }
 
             if (_database is not null && _container is null)
@@ -71,7 +73,7 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         return _container is not null;
     }
 
-    public async Task<bool> RebuildAsync()
+    public async Task<int> RebuildAsync()
     {
         if (await IsConnectedAsync())
         {
@@ -86,10 +88,10 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
                 await _container!.UpsertItemAsync(entity);
             }
 
-            return true;
+            return allStreams.Count;
         }
 
-        return false;
+        return -1;
     }
     
     public async Task<T?> UpsertAsync(T entity)

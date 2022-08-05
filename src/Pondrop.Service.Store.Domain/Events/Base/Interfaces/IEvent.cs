@@ -9,6 +9,8 @@ public interface IEvent
     long SequenceNumber { get; }
     string EventPayloadType { get; }
     JObject Payload { get; }
+    string CreatedBy { get; }
+    DateTime CreatedUtc { get; }
 
     IEventPayload? GetEventPayload();
     IEventPayload? GetEventPayload(IEventTypePayloadResolver eventTypePayloadResolver);

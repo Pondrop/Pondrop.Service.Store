@@ -7,7 +7,7 @@ public interface IMaterializedViewRepository<T> where T : EventEntity
 {
     Task<bool> IsConnectedAsync();
     
-    Task<bool> RebuildAsync();
+    Task<int> RebuildAsync();
     Task<T?> UpsertAsync(T item);
     
     Task<List<T>> GetAllAsync();

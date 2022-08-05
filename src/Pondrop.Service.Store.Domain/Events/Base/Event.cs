@@ -12,15 +12,19 @@ public class Event : IEvent
         SequenceNumber = -1;
         EventPayloadType = string.Empty;
         Payload = new JObject();
+        CreatedBy = string.Empty;
+        CreatedUtc = DateTime.MinValue;
     }
 
-    public Event(string streamId, string streamType, long sequenceNumber, IEventPayload payload)
+    public Event(string streamId, string streamType, long sequenceNumber, IEventPayload payload, string createdBy)
     {
         StreamId = streamId;
         StreamType = streamType;
         SequenceNumber = sequenceNumber;
         EventPayloadType = payload.GetType().Name;
         Payload = JObject.FromObject(payload);
+        CreatedBy = createdBy;
+        CreatedUtc = DateTime.UtcNow;
     }
     
     [JsonProperty("streamId")]
@@ -37,6 +41,12 @@ public class Event : IEvent
     
     [JsonProperty("payload")]
     public JObject Payload { get; init; }
+    
+    [JsonProperty("createdBy")]
+    public string CreatedBy { get; init; }
+    
+    [JsonProperty("createdUtc")]
+    public DateTime CreatedUtc { get; init; }
 
     public IEventPayload? GetEventPayload()
         => GetEventPayload(DefaultEventTypePayloadResolver.Instance);

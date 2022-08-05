@@ -58,6 +58,18 @@ public abstract record EventEntity
     
     [JsonProperty("atSequence")]
     public long AtSequence { get; protected set; }
+    
+    [JsonProperty("createdBy")]
+    public string CreatedBy { get; protected set; } = string.Empty;
+    
+    [JsonProperty("updatedBy")]
+    public string UpdatedBy { get; protected set; } = string.Empty;
+    
+    [JsonProperty("createdUtc")]
+    public DateTime CreatedUtc { get; protected set; }
+    
+    [JsonProperty("updatedUtc")]
+    public DateTime UpdatedUtc { get; protected set; }
 
     public IEnumerable<IEvent> GetEvents() => Events;
     public IEnumerable<IEvent> GetEvents(long fromSequenceNumber) => Events.Where(i => i.SequenceNumber >= fromSequenceNumber);
@@ -73,7 +85,7 @@ public abstract record EventEntity
         }
     }
     
-    public abstract void Apply(IEventPayload eventPayloadToApply);
+    public abstract void Apply(IEventPayload eventPayloadToApply, string createdBy);
     
     protected readonly List<IEvent> Events = new List<IEvent>();
     protected abstract void Apply(IEvent eventToApply);

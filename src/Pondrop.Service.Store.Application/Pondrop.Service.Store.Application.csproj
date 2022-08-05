@@ -19,9 +19,4 @@
     <ProjectReference Include="..\Pondrop.Service.Store.Domain\Pondrop.Service.Store.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Commands\Todos" />
-    <Folder Include="Queries\Todos" />
-  </ItemGroup>
-
 </Project>

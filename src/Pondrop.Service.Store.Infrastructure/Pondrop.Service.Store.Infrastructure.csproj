@@ -26,4 +26,9 @@
     <None Remove="CosmosDb\StoredProcedures\spAppendToStream.js" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Mapper" />
+    <Folder Include="Models" />
+  </ItemGroup>
+
 </Project>
