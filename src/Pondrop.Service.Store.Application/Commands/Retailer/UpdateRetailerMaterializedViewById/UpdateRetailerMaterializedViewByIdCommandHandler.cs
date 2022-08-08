@@ -50,7 +50,7 @@ public class UpdateRetailerMaterializedViewByIdCommandHandler : IRequestHandler<
             if (retailerStream.Version >= 0)
             {
                 var retailerEntity = new RetailerEntity(retailerStream.Events);
-                retailerEntity = await _retailerMaterializedViewRepository.UpsertAsync(retailerEntity);
+                retailerEntity = await _retailerMaterializedViewRepository.ReplaceAsync(retailerEntity);
 
                 result = retailerEntity is not null && retailerEntity.Id == command.Id
                     ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))

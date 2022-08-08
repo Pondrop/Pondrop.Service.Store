@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateStoreTypeCommandHandler : StoreTypeCommandHandler<UpdateStoreTypeCommand, Result<StoreTypeRecord>>
+public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreTypeCommand, Result<StoreTypeRecord>, StoreTypeEntity, UpdateStoreTypeMaterializedViewByIdCommand>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
@@ -28,7 +28,7 @@ public class UpdateStoreTypeCommandHandler : StoreTypeCommandHandler<UpdateStore
         IDaprService daprService,
         IMapper mapper,
         IValidator<UpdateStoreTypeCommand> validator,
-        ILogger<UpdateStoreTypeCommandHandler> logger) : base(storeTypeUpdateConfig, daprService, logger)
+        ILogger<UpdateStoreTypeCommandHandler> logger) : base(storeTypeViewRepository, storeTypeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _storeTypeViewRepository = storeTypeViewRepository;
@@ -61,7 +61,9 @@ public class UpdateStoreTypeCommandHandler : StoreTypeCommandHandler<UpdateStore
                 
                 var success = await _eventRepository.AppendEventsAsync(storeTypeEntity.StreamId, storeTypeEntity.AtSequence - 1, storeTypeEntity.GetEvents(storeTypeEntity.AtSequence));
 
-                await InvokeDaprMethods(storeTypeEntity.Id, storeTypeEntity.GetEvents(storeTypeEntity.AtSequence));
+                await Task.WhenAll(
+                    UpdateMaterializedView(storeTypeEntity.AtSequence - 1, storeTypeEntity),
+                    InvokeDaprMethods(storeTypeEntity.Id, storeTypeEntity.GetEvents(storeTypeEntity.AtSequence)));
                 
                 result = success
                     ? Result<StoreTypeRecord>.Success(_mapper.Map<StoreTypeRecord>(storeTypeEntity))

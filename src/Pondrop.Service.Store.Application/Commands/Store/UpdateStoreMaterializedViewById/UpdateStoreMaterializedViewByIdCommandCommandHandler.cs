@@ -50,7 +50,7 @@ public class UpdateStoreMaterializedViewByIdCommandCommandHandler : IRequestHand
             if (storeStream.Version >= 0)
             {
                 var storeEntity = new StoreEntity(storeStream.Events);
-                storeEntity = await _storeMaterializedViewRepository.UpsertAsync(storeEntity);
+                storeEntity = await _storeMaterializedViewRepository.ReplaceAsync(storeEntity);
 
                 result = storeEntity is not null && storeEntity.Id == command.Id
                     ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))

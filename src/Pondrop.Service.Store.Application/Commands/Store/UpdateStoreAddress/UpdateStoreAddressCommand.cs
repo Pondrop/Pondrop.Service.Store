@@ -8,12 +8,12 @@ public class UpdateStoreAddressCommand : IRequest<Result<StoreRecord>>
 {
     public Guid Id { get; init; } = Guid.Empty;
     public Guid StoreId { get; init; } = Guid.Empty;
-    public string? AddressLine1 { get; init; }
-    public string? AddressLine2 { get; init; }
-    public string? Suburb { get; init; }
-    public string? State { get; init; }
-    public string? Postcode { get; init; }
-    public string? Country { get; init; }
-    public double? Latitude { get; init; }
-    public double? Longitude { get; init; }
+    public string? AddressLine1 { get; init; } = null;
+    public string? AddressLine2 { get; init; } = null;
+    public string? Suburb { get; init; } = null;
+    public string? State { get; init; } = null;
+    public string? Postcode { get; init; } = null;
+    public string? Country { get; init; } = null;
+    public double? Latitude { get; init; } = null;
+    public double? Longitude { get; init; } = null;
 }

@@ -21,6 +21,8 @@ public class StoreTypeController : ControllerBase
     }
     
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllStoreTypes()
     {
         var result = await _mediator.Send(new GetAllStoreTypesQuery());
@@ -31,6 +33,9 @@ public class StoreTypeController : ControllerBase
     
     [HttpGet]
     [Route("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStoreTypeById([FromRoute] Guid id)
     {
         var result = await _mediator.Send(new GetStoreTypeByIdQuery() { Id = id });
@@ -41,16 +46,20 @@ public class StoreTypeController : ControllerBase
 
     [HttpPost]
     [Route("create")]
-    public async Task<IActionResult> CreateStoreTypeCommand([FromBody] CreateStoreTypeCommand command)
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateStoreType([FromBody] CreateStoreTypeCommand command)
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => new OkObjectResult(i),
+            i => StatusCode(StatusCodes.Status201Created, i),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
     [HttpPost]
     [Route("update")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateStoreType([FromBody] UpdateStoreTypeCommand command)
     {
         var result = await _mediator.Send(command);
@@ -61,6 +70,8 @@ public class StoreTypeController : ControllerBase
     
     [HttpPost]
     [Route("update/view")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateMaterializedView([FromBody] UpdateStoreTypeMaterializedViewByIdCommand command)
     {
         var result = await _mediator.Send(command);
@@ -71,6 +82,8 @@ public class StoreTypeController : ControllerBase
     
     [HttpPost]
     [Route("rebuild/view")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RebuildMaterializedView()
     {
         var result = await _mediator.Send(new RebuildStoreTypeMaterializedViewCommand());

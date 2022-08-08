@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateRetailerCommandHandler : RetailerCommandHandler<UpdateRetailerCommand, Result<RetailerRecord>>
+public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCommand, Result<RetailerRecord>, RetailerEntity, UpdateRetailerMaterializedViewByIdCommand>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retialerViewRepository;
@@ -23,15 +23,15 @@ public class UpdateRetailerCommandHandler : RetailerCommandHandler<UpdateRetaile
     public UpdateRetailerCommandHandler(
         IOptions<RetailerUpdateConfiguration> retailerUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<RetailerEntity> retialerViewRepository,
+        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
         IUserService userService,
         IDaprService daprService,
         IMapper mapper,
         IValidator<UpdateRetailerCommand> validator,
-        ILogger<UpdateRetailerCommandHandler> logger) : base(retailerUpdateConfig, daprService, logger)
+        ILogger<UpdateRetailerCommandHandler> logger) : base(retailerViewRepository, retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
-        _retialerViewRepository = retialerViewRepository;
+        _retialerViewRepository = retailerViewRepository;
         _userService = userService;
         _mapper = mapper;
         _validator = validator;
@@ -61,7 +61,9 @@ public class UpdateRetailerCommandHandler : RetailerCommandHandler<UpdateRetaile
                 
                 var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, retailerEntity.AtSequence - 1, retailerEntity.GetEvents(retailerEntity.AtSequence));
 
-                await InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents(retailerEntity.AtSequence));
+                await Task.WhenAll(
+                    UpdateMaterializedView(retailerEntity.AtSequence - 1, retailerEntity),
+                    InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
                 
                 result = success
                     ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))

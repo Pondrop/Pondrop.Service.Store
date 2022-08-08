@@ -21,6 +21,8 @@ public class StoreController : ControllerBase
     }
     
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllStores()
     {
         var result = await _mediator.Send(new GetAllStoresQuery());
@@ -31,7 +33,10 @@ public class StoreController : ControllerBase
     
     [HttpGet]
     [Route("{id:guid}")]
-    public async Task<IActionResult> GetStores([FromRoute] Guid id)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetStoreById([FromRoute] Guid id)
     {
         var result = await _mediator.Send(new GetStoreByIdQuery() { Id = id });
         return result.Match<IActionResult>(
@@ -41,7 +46,21 @@ public class StoreController : ControllerBase
     
     [HttpPost]
     [Route("create")]
-    public async Task<IActionResult> CreateStoreCommand([FromBody] CreateStoreCommand command)
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateStore([FromBody] CreateStoreCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return result.Match<IActionResult>(
+            i => StatusCode(StatusCodes.Status201Created, i),
+            (ex, msg) => new BadRequestObjectResult(msg));
+    }
+    
+    [HttpPost]
+    [Route("update")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateStore([FromBody] UpdateStoreCommand command)
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
@@ -51,16 +70,20 @@ public class StoreController : ControllerBase
     
     [HttpPost]
     [Route("address/add")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddAddressToStore([FromBody] AddAddressToStoreCommand command)
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => new OkObjectResult(i),
+            i => StatusCode(StatusCodes.Status201Created, i),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
     [HttpPost]
     [Route("address/remove")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RemoveAddressFromStore([FromBody] RemoveAddressFromStoreCommand command)
     {
         var result = await _mediator.Send(command);
@@ -71,6 +94,8 @@ public class StoreController : ControllerBase
     
     [HttpPost]
     [Route("address/update")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateStoreAddressStore([FromBody] UpdateStoreAddressCommand command)
     {
         var result = await _mediator.Send(command);
@@ -81,6 +106,8 @@ public class StoreController : ControllerBase
     
     [HttpPost]
     [Route("update/view")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateMaterializedView([FromBody] UpdateStoreMaterializedViewByIdCommand command)
     {
         var result = await _mediator.Send(command);
@@ -91,6 +118,8 @@ public class StoreController : ControllerBase
     
     [HttpPost]
     [Route("rebuild/view")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RebuildMaterializedView()
     {
         var result = await _mediator.Send(new RebuildStoreMaterializedViewCommand());

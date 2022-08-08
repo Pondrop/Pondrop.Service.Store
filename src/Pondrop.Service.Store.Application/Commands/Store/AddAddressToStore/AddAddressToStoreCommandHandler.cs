@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class AddAddressToStoreCommandHandler : StoreCommandHandler<AddAddressToStoreCommand, Result<StoreRecord>>
+public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToStoreCommand, Result<StoreRecord>, StoreEntity, UpdateStoreMaterializedViewByIdCommand>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
@@ -22,11 +22,12 @@ public class AddAddressToStoreCommandHandler : StoreCommandHandler<AddAddressToS
     public AddAddressToStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
+        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<AddAddressToStoreCommand> validator,
-        ILogger<AddAddressToStoreCommandHandler> logger) : base(storeUpdateConfig, daprService, logger)
+        ILogger<AddAddressToStoreCommandHandler> logger) : base(storeViewRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -54,10 +55,10 @@ public class AddAddressToStoreCommandHandler : StoreCommandHandler<AddAddressToS
 
             if (storeStream.Version >= 0)
             {
-                var store = new StoreEntity(storeStream.Events);
-                store.Apply(new AddStoreAddress(
+                var storeEntity = new StoreEntity(storeStream.Events);
+                storeEntity.Apply(new AddStoreAddress(
                     Guid.NewGuid(),
-                    store.Id,
+                    storeEntity.Id,
                     command.ExternalReferenceId,
                     command.AddressLine1,
                     command.AddressLine2,
@@ -67,12 +68,14 @@ public class AddAddressToStoreCommandHandler : StoreCommandHandler<AddAddressToS
                     command.Country,
                     command.Latitude,
                     command.Longitude), _userService.CurrentUserName());
-                var success = await _eventRepository.AppendEventsAsync(store.StreamId, store.AtSequence - 1, store.GetEvents(store.AtSequence));
+                var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
 
-                await InvokeDaprMethods(store.Id, store.GetEvents(store.AtSequence));
+                await Task.WhenAll(
+                    UpdateMaterializedView(storeEntity.AtSequence - 1, storeEntity),
+                    InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
             
                 result = success
-                    ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(store))
+                    ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
                     : Result<StoreRecord>.Error(FailedToCreateMessage(command));
             }
             else

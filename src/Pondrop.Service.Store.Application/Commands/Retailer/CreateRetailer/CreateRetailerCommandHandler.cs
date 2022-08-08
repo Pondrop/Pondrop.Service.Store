@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateRetailerCommandHandler : RetailerCommandHandler<CreateRetailerCommand, Result<RetailerRecord>>
+public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCommand, Result<RetailerRecord>, RetailerEntity, UpdateRetailerMaterializedViewByIdCommand>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
@@ -22,11 +22,12 @@ public class CreateRetailerCommandHandler : RetailerCommandHandler<CreateRetaile
     public CreateRetailerCommandHandler(
         IOptions<RetailerUpdateConfiguration> retailerUpdateConfig,
         IEventRepository eventRepository,
+        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<CreateRetailerCommand> validator,
-        ILogger<CreateRetailerCommandHandler> logger) : base(retailerUpdateConfig, daprService, logger)
+        ILogger<CreateRetailerCommandHandler> logger) : base(retailerViewRepository, retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -50,13 +51,15 @@ public class CreateRetailerCommandHandler : RetailerCommandHandler<CreateRetaile
 
         try
         {
-            var retailer = new RetailerEntity(command.Name, command.ExternalReferenceId, _userService.CurrentUserName());
-            var success = await _eventRepository.AppendEventsAsync(retailer.StreamId, 0, retailer.GetEvents());
+            var retailerEntity = new RetailerEntity(command.Name, command.ExternalReferenceId, _userService.CurrentUserName());
+            var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, 0, retailerEntity.GetEvents());
 
-            await InvokeDaprMethods(retailer.Id, retailer.GetEvents());
+            await Task.WhenAll(
+                UpdateMaterializedView(0, retailerEntity),
+                InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
             
             result = success
-                ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailer))
+                ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))
                 : Result<RetailerRecord>.Error(FailedToCreateMessage(command));
         }
         catch (Exception ex)

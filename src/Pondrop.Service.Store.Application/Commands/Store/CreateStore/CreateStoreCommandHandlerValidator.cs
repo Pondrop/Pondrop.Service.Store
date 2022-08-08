@@ -24,5 +24,8 @@ public class CreateStoreCommandHandlerValidator : AbstractValidator<CreateStoreC
         RuleFor(x => x.Address!.Country).Must(x => _addressService.IsValidAustralianCountry(x));
         RuleFor(x => x.Address!.Latitude).Must(x => x != 0);
         RuleFor(x => x.Address!.Longitude).Must(x => x != 0);
+        
+        RuleFor(x => x.RetailerId).NotEmpty();
+        RuleFor(x => x.StoreTypeId).NotEmpty();
     }
 }

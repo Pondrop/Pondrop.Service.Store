@@ -4,7 +4,6 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateRetailerMaterializedViewByIdCommand : IRequest<Result<RetailerRecord>>
+public class UpdateRetailerMaterializedViewByIdCommand : UpdateMaterializedViewByIdCommand<Result<RetailerRecord>>
 {
-    public Guid Id { get; init; } = Guid.Empty;
 }

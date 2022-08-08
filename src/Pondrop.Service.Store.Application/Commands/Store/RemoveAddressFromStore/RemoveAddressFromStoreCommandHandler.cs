@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class RemoveAddressFromStoreCommandHandler : StoreCommandHandler<RemoveAddressFromStoreCommand, Result<StoreRecord>>
+public class RemoveAddressFromStoreCommandHandler : DirtyCommandHandler<RemoveAddressFromStoreCommand, Result<StoreRecord>, StoreEntity, UpdateStoreMaterializedViewByIdCommand>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
@@ -22,11 +22,12 @@ public class RemoveAddressFromStoreCommandHandler : StoreCommandHandler<RemoveAd
     public RemoveAddressFromStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
+        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<RemoveAddressFromStoreCommand> validator,
-        ILogger<RemoveAddressFromStoreCommandHandler> logger) : base(storeUpdateConfig, daprService, logger)
+        ILogger<RemoveAddressFromStoreCommandHandler> logger) : base(storeViewRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -54,17 +55,19 @@ public class RemoveAddressFromStoreCommandHandler : StoreCommandHandler<RemoveAd
 
             if (storeStream.Version >= 0)
             {
-                var store = new StoreEntity(storeStream.Events);
+                var storeEntity = new StoreEntity(storeStream.Events);
 
-                if (store.Addresses.Any(i => i.Id == command.Id))
+                if (storeEntity.Addresses.Any(i => i.Id == command.Id))
                 {
-                    store.Apply(new RemoveAddressFromStore(command.Id, command.StoreId), _userService.CurrentUserName());
-                    var success = await _eventRepository.AppendEventsAsync(store.StreamId, store.AtSequence - 1, store.GetEvents(store.AtSequence));
+                    storeEntity.Apply(new RemoveAddressFromStore(command.Id, command.StoreId), _userService.CurrentUserName());
+                    var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
 
-                    await InvokeDaprMethods(store.Id, store.GetEvents(store.AtSequence));
+                    await Task.WhenAll(
+                        UpdateMaterializedView(storeEntity.AtSequence - 1, storeEntity),
+                        InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
             
                     result = success
-                        ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(store))
+                        ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
                         : Result<StoreRecord>.Error(FailedToCreateMessage(command));   
                 }
                 else

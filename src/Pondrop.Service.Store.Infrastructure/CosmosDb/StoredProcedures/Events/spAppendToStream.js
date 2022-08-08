@@ -10,7 +10,7 @@ function appendToStream(streamId, expectedVersion, events) {
     
     var versionQuery =
         {
-            'query' : 'SELECT Max(e.sequenceNumber) FROM events e WHERE e.streamId = @streamId',
+            'query' : 'SELECT Max(c.sequenceNumber) FROM c WHERE c.streamId = @streamId',
             'parameters' : [{ 'name': '@streamId', 'value': streamId }]
         };
 
@@ -30,17 +30,15 @@ function appendToStream(streamId, expectedVersion, events) {
             if ((!latestSeqNum && expectedVersion === 0) || (latestSeqNum === expectedVersion))
             {
                 // Everything's fine, bulk insert the events.
-                JSON.parse(events).forEach(event => __.createDocument(__.getSelfLink(), event));
-
-                __.response.setBody(true);
+                parsedEvents.forEach(event => __.createDocument(__.getSelfLink(), event));
+                __.response.setBody(parsedEvents.length);
             }
             else {
-                __.response.setBody(false);
+                __.response.setBody(0);
             }
         });
 
     if (!success) {
         throw new Error('Appending events failed.');
-    }
-        
+    }        
 }

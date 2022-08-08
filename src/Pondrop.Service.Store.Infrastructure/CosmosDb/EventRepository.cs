@@ -83,39 +83,8 @@ public class EventRepository : IEventRepository
 
             if (_container is not null)
             {
-                var spPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"CosmosDb/StoredProcedures");
-                foreach (var fi in new DirectoryInfo(spPath).EnumerateFiles().Where(i => i.Name.EndsWith(".js", StringComparison.OrdinalIgnoreCase)))
-                {
-                    var name = fi.Name[..^3];
-                    var spBody = await File.ReadAllTextAsync(fi.FullName);
-                
-                    try
-                    {
-                        var spResp = await _container.Scripts.ReadStoredProcedureAsync(name);
-
-                        using var sha1 = SHA1.Create();
-                    
-                        var currentBytes = Encoding.UTF8.GetBytes(spBody);
-                        var newBytes = Encoding.UTF8.GetBytes(spResp.Resource.Body);
-                    
-                        if (!sha1.ComputeHash(currentBytes).SequenceEqual(sha1.ComputeHash(newBytes)))
-                        {
-                            spResp.Resource.Body = spBody;
-                            await _container.Scripts.ReplaceStoredProcedureAsync(spResp.Resource);
-                        }
-                    }
-                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        // Create stored procedure
-                        var storedProcedureProperties = new StoredProcedureProperties
-                        {
-                            Id = name,
-                            Body = spBody
-                        };
-
-                        await _container.Scripts.CreateStoredProcedureAsync(storedProcedureProperties);
-                    }
-                }
+                var spDirInfo = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"CosmosDb/StoredProcedures/Events"));
+                await _container.EnsureStoreProcedures(spDirInfo);
             }
         }
         catch (Exception ex)
@@ -142,7 +111,8 @@ public class EventRepository : IEventRepository
                 JsonConvert.SerializeObject(events)
             };
             
-            return await _container!.Scripts.ExecuteStoredProcedureAsync<bool>(SpAppendToStreamName, new PartitionKey(streamId), parameters);
+            var count = await _container!.Scripts.ExecuteStoredProcedureAsync<int>(SpAppendToStreamName, new PartitionKey(streamId), parameters);
+            return count > 0;
         }
 
         return false;

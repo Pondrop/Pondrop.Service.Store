@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateStoreCommandHandler : StoreCommandHandler<CreateStoreCommand, Result<StoreRecord>>
+public class CreateStoreCommandHandler : DirtyCommandHandler<CreateStoreCommand, Result<StoreRecord>, StoreEntity, UpdateStoreMaterializedViewByIdCommand>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
@@ -26,11 +26,12 @@ public class CreateStoreCommandHandler : StoreCommandHandler<CreateStoreCommand,
         IEventRepository eventRepository,
         IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
         IMaterializedViewRepository<StoreTypeEntity> storeTypeViewRepository,
+        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<CreateStoreCommand> validator,
-        ILogger<CreateStoreCommandHandler> logger) : base(storeUpdateConfig, daprService, logger)
+        ILogger<CreateStoreCommandHandler> logger) : base(storeViewRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;
@@ -69,10 +70,10 @@ public class CreateStoreCommandHandler : StoreCommandHandler<CreateStoreCommand,
             var retailerRecord = _mapper.Map<RetailerRecord>(retailerTask.Result);
             var storeTypeRecord = _mapper.Map<StoreTypeRecord>(storeTypeTask.Result);
             
-            var store = new StoreEntity(command.Name, command.Status, command.ExternalReferenceId, retailerRecord, storeTypeRecord, _userService.CurrentUserName());
-            store.Apply(new AddStoreAddress(
+            var storeEntity = new StoreEntity(command.Name, command.Status, command.ExternalReferenceId, retailerRecord, storeTypeRecord, _userService.CurrentUserName());
+            storeEntity.Apply(new AddStoreAddress(
                 Guid.NewGuid(),
-                store.Id,
+                storeEntity.Id,
                 command.Address!.ExternalReferenceId,
                 command.Address!.AddressLine1,
                 command.Address?.AddressLine2 ?? string.Empty,
@@ -82,12 +83,14 @@ public class CreateStoreCommandHandler : StoreCommandHandler<CreateStoreCommand,
                 command.Address!.Country,
                 command.Address!.Latitude,
                 command.Address!.Longitude), _userService.CurrentUserName());
-            var success = await _eventRepository.AppendEventsAsync(store.StreamId, 0, store.GetEvents());
+            var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, 0, storeEntity.GetEvents());
 
-            await InvokeDaprMethods(store.Id, store.GetEvents());
+            await Task.WhenAll(
+                UpdateMaterializedView(0, storeEntity),
+                InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents()));
             
             result = success
-                ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(store))
+                ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
                 : Result<StoreRecord>.Error(FailedToCreateMessage(command));
         }
         catch (Exception ex)

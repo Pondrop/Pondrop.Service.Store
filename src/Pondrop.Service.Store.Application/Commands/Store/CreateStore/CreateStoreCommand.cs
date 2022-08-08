@@ -17,13 +17,28 @@ public class CreateStoreCommand : IRequest<Result<StoreRecord>>
 }
 
 public record AddressRecord(
-        string ExternalReferenceId,
-        string AddressLine1,
-        string? AddressLine2,
-        string Suburb,
-        string State,
-        string Postcode,
-        string Country,
-        double Latitude,
-        double Longitude);
+    string ExternalReferenceId,
+    string AddressLine1,
+    string? AddressLine2,
+    string Suburb,
+    string State,
+    string Postcode,
+    string Country,
+    double Latitude,
+    double Longitude)
+{
+    public AddressRecord() : this(
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        0,
+        0
+    )
+    {
+    }
+}
     

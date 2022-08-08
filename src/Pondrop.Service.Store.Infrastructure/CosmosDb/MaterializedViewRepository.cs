@@ -1,14 +1,21 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Scripts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Pondrop.Service.Store.Infrastructure.CosmosDb;
 
 public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> where T : EventEntity, new()
 {
+    private const string SpUpsertMaterializedView = "spUpsertMaterializedView";
+    
     private readonly string _containerName;
 
     private readonly IEventRepository _eventRepository;
@@ -60,6 +67,12 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
             {
                 _container = await _database.CreateContainerIfNotExistsAsync(_containerName, "/id");
             }
+            
+            if (_container is not null)
+            {
+                var spDirInfo = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"CosmosDb/StoredProcedures/Materialized"));
+                await _container.EnsureStoreProcedures(spDirInfo);
+            }
         }
         catch (Exception ex)
         {
@@ -94,7 +107,27 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         return -1;
     }
     
-    public async Task<T?> UpsertAsync(T entity)
+    public async Task<T?> UpsertAsync(long expectedVersion, T entity)
+    {
+        if (await IsConnectedAsync())
+        {
+            var idString = entity.Id.ToString();
+            
+            var parameters = new dynamic[]
+            {
+                idString,
+                expectedVersion,
+                JsonConvert.SerializeObject(entity)
+            };
+
+            await _container!.Scripts.ExecuteStoredProcedureAsync<T?>(SpUpsertMaterializedView,
+                new PartitionKey(idString), parameters);
+        }
+
+        return default;
+    }
+    
+    public async Task<T?> ReplaceAsync(T entity)
     {
         if (await IsConnectedAsync())
         {
