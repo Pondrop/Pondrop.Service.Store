@@ -10,7 +10,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateStoreTypeCommandHandler : DirtyCommandHandler<CreateStoreTypeCommand, Result<StoreTypeRecord>, StoreTypeEntity, UpdateStoreTypeMaterializedViewByIdCommand>
+public class CreateStoreTypeCommandHandler : DirtyCommandHandler<CreateStoreTypeCommand, Result<StoreTypeRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
@@ -21,12 +21,11 @@ public class CreateStoreTypeCommandHandler : DirtyCommandHandler<CreateStoreType
     public CreateStoreTypeCommandHandler(
         IOptions<StoreTypeUpdateConfiguration> storeTypeUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<StoreTypeEntity> storeTypeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<CreateStoreTypeCommand> validator,
-        ILogger<CreateStoreTypeCommandHandler> logger) : base(storeTypeViewRepository, storeTypeUpdateConfig.Value, daprService, logger)
+        ILogger<CreateStoreTypeCommandHandler> logger) : base(storeTypeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -54,7 +53,6 @@ public class CreateStoreTypeCommandHandler : DirtyCommandHandler<CreateStoreType
             var success = await _eventRepository.AppendEventsAsync(storeType.StreamId, 0, storeType.GetEvents());
 
             await Task.WhenAll(
-                UpdateMaterializedView(0, storeType),
                 InvokeDaprMethods(storeType.Id, storeType.GetEvents()));
 
             result = success

@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand, Result<StoreRecord>, StoreEntity, UpdateStoreMaterializedViewByIdCommand>
+public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
@@ -32,7 +32,7 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
         IUserService userService,
         IMapper mapper,
         IValidator<UpdateStoreCommand> validator,
-        ILogger<UpdateStoreCommandHandler> logger) : base(storeViewRepository, storeUpdateConfig.Value, daprService, logger)
+        ILogger<UpdateStoreCommandHandler> logger) : base(storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;
@@ -84,7 +84,6 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
                 var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
 
                 await Task.WhenAll(
-                    UpdateMaterializedView(storeEntity.AtSequence - 1, storeEntity),
                     InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
             
                 result = success

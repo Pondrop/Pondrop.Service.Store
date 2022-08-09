@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToStoreCommand, Result<StoreRecord>, StoreEntity, UpdateStoreMaterializedViewByIdCommand>
+public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
@@ -22,12 +22,11 @@ public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToS
     public AddAddressToStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<AddAddressToStoreCommand> validator,
-        ILogger<AddAddressToStoreCommandHandler> logger) : base(storeViewRepository, storeUpdateConfig.Value, daprService, logger)
+        ILogger<AddAddressToStoreCommandHandler> logger) : base(storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -71,7 +70,6 @@ public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToS
                 var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
 
                 await Task.WhenAll(
-                    UpdateMaterializedView(storeEntity.AtSequence - 1, storeEntity),
                     InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
             
                 result = success

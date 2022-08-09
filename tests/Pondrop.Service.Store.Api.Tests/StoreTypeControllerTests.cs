@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Moq;
+using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.ApiControllers;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Queries;
@@ -20,11 +21,15 @@ namespace Pondrop.Service.Store.Api.Tests
     public class StoreTypeControllerTests
     {
         private readonly Mock<IMediator> _mediatorMock;
+        private readonly Mock<IUpdateMaterializeViewQueueService> _updateMaterializeViewQueueServiceMock;
+        private readonly Mock<IRebuildMaterializeViewQueueService> _rebuildMaterializeViewQueueServiceMock;
         private readonly Mock<ILogger<StoreTypeController>> _loggerMock;
         
         public StoreTypeControllerTests()
         {
             _mediatorMock = new Mock<IMediator>();
+            _updateMaterializeViewQueueServiceMock = new Mock<IUpdateMaterializeViewQueueService>();
+            _rebuildMaterializeViewQueueServiceMock = new Mock<IRebuildMaterializeViewQueueService>();
             _loggerMock = new Mock<ILogger<StoreTypeController>>();
         }
 
@@ -36,10 +41,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(It.IsAny<GetAllStoreTypesQuery>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<List<StoreTypeRecord>>.Success(items));
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
 
             // act
             var response = await controller.GetAllStoreTypes();
@@ -58,10 +60,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(It.IsAny<GetAllStoreTypesQuery>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(failedResult);
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
 
             // act
             var response = await controller.GetAllStoreTypes();
@@ -80,10 +79,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(It.Is<GetStoreTypeByIdQuery>(x => x.Id == item.Id), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<StoreTypeRecord>.Success(item));
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
             var response = await controller.GetStoreTypeById(item.Id);
@@ -102,10 +98,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(It.IsAny<GetStoreTypeByIdQuery>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(failedResult);
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
             var response = await controller.GetStoreTypeById(Guid.NewGuid());
@@ -125,10 +118,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<StoreTypeRecord>.Success(item));
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
             var response = await controller.CreateStoreType(cmd);
@@ -138,6 +128,7 @@ namespace Pondrop.Service.Store.Api.Tests
             Assert.Equal(((ObjectResult)response).StatusCode, StatusCodes.Status201Created);
             Assert.Equal(((ObjectResult)response).Value, item);
             _mediatorMock.Verify(x => x.Send(cmd, It.IsAny<CancellationToken>()), Times.Once());
+            _updateMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.Is<UpdateMaterializedViewByIdCommand>(c => c.Id == item.Id)));
         }
         
         [Fact]
@@ -148,10 +139,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(It.IsAny<CreateStoreTypeCommand>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(failedResult);
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
             var response = await controller.CreateStoreType(new CreateStoreTypeCommand());
@@ -171,10 +159,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result<StoreTypeRecord>.Success(item));
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
             var response = await controller.UpdateMaterializedView(cmd);
@@ -193,10 +178,7 @@ namespace Pondrop.Service.Store.Api.Tests
             _mediatorMock
                 .Setup(x => x.Send(It.IsAny<UpdateStoreTypeMaterializedViewByIdCommand>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(failedResult);
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
             var response = await controller.UpdateMaterializedView(new UpdateStoreTypeMaterializedViewByIdCommand());
@@ -208,45 +190,25 @@ namespace Pondrop.Service.Store.Api.Tests
         }
         
         [Fact]
-        public async void RebuildMaterializedView_ShouldReturnOkResult()
+        public async void RebuildMaterializedView_ShouldReturnAcceptedResult()
         {
             // arrange
-            _mediatorMock
-                .Setup(x => x.Send(It.IsAny<RebuildStoreTypeMaterializedViewCommand>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result<int>.Success(100));
-            var controller = new StoreTypeController(
-                _mediatorMock.Object,
-                _loggerMock.Object
-            );
+            var controller = GetController();
         
             // act
-            var response = await controller.RebuildMaterializedView();
+            var response = controller.RebuildMaterializedView();
         
             // assert
-            Assert.IsType<OkResult>(response);
-            _mediatorMock.Verify(x => x.Send(It.IsAny<RebuildStoreTypeMaterializedViewCommand>(), It.IsAny<CancellationToken>()), Times.Once());
+            Assert.IsType<AcceptedResult>(response);
+            _rebuildMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.IsAny<RebuildStoreTypeMaterializedViewCommand>()), Times.Once());
         }
-        
-        [Fact]
-        public async void RebuildMaterializedView_ShouldReturnBadResult_WhenFailedResult()
-        {
-            // arrange
-            var failedResult = Result<int>.Error("Invalid result!");
-            _mediatorMock
-                .Setup(x => x.Send(It.IsAny<RebuildStoreTypeMaterializedViewCommand>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(failedResult);
-            var controller = new StoreTypeController(
+
+        private StoreTypeController GetController() =>
+            new StoreTypeController(
                 _mediatorMock.Object,
+                _updateMaterializeViewQueueServiceMock.Object,
+                _rebuildMaterializeViewQueueServiceMock.Object,
                 _loggerMock.Object
             );
-        
-            // act
-            var response = await controller.RebuildMaterializedView();
-        
-            // assert
-            Assert.IsType<BadRequestObjectResult>(response);
-            Assert.Equal(((ObjectResult)response).Value, failedResult.ErrorMessage);
-            _mediatorMock.Verify(x => x.Send(It.IsAny<RebuildStoreTypeMaterializedViewCommand>(), It.IsAny<CancellationToken>()), Times.Once());
-        }
     }
 }

@@ -17,15 +17,19 @@ function upsertMaterializedView(id, expectedVersion, item) {
             }
 
             if (!items || !items.length) {
-                throw new Error("No results from query.");
+                // New document
+                __.createDocument(
+                    __.getSelfLink(),
+                    parsedItem,
+                    function(err, newDoc) {
+                        if (err) throw new Error('Error: ' + err.message);
+                        __.response.setBody(newDoc);
+                    });
             }
 
             const item = items[0];
-
-            // Concurrency check.
             if (item)
             {
-                // Everything's fine, bulk insert the events.
                 __.replaceDocument(
                     item._self,
                     parsedItem,

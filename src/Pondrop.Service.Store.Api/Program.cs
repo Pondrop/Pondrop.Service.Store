@@ -82,6 +82,12 @@ services.Configure<RetailerUpdateConfiguration>(configuration.GetSection(DaprEve
 services.Configure<StoreTypeUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreTypeUpdateConfiguration.Key));
 services.Configure<StoreUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreUpdateConfiguration.Key));
 
+services.AddHostedService<UpdateMaterializeViewHostedService>();
+services.AddSingleton<IUpdateMaterializeViewQueueService, UpdateMaterializeViewQueueService>();
+
+services.AddHostedService<RebuildMaterializeViewHostedService>();
+services.AddSingleton<IRebuildMaterializeViewQueueService, RebuildMaterializeViewQueueService>();
+
 services.AddSingleton<IAddressService, AddressService>();
 services.AddSingleton<IUserService, UserService>();
 services.AddSingleton<IEventRepository, EventRepository>();

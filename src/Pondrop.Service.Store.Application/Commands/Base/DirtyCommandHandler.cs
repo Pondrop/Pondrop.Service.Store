@@ -8,23 +8,18 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public abstract class DirtyCommandHandler<TRequest, TResponse, TEntity, TUpdateByIdCommand> : IRequestHandler<TRequest, TResponse>
+public abstract class DirtyCommandHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TEntity : EventEntity
-    where TUpdateByIdCommand : UpdateMaterializedViewByIdCommand<TResponse>, new()
 {
-    private readonly IMaterializedViewRepository<TEntity> _materializedViewRepository;
     private readonly DaprEventTopicConfiguration _daprUpdateConfig;
     private readonly IDaprService _daprService; 
     private readonly ILogger _logger;
 
     public DirtyCommandHandler(
-        IMaterializedViewRepository<TEntity> materializedViewRepository,
         DaprEventTopicConfiguration daprUpdateConfig,
         IDaprService daprService,
         ILogger logger)
     {
-        _materializedViewRepository = materializedViewRepository;
         _daprUpdateConfig = daprUpdateConfig;
         _daprService = daprService;
         _logger = logger;
@@ -32,17 +27,6 @@ public abstract class DirtyCommandHandler<TRequest, TResponse, TEntity, TUpdateB
 
     public abstract Task<TResponse> Handle(TRequest command, CancellationToken cancellationToken);
 
-    protected async Task<TEntity?> UpdateMaterializedView(long expectedVersion, TEntity entity)
-    {
-        if (expectedVersion >= 0)
-        {
-            // Update Materialized View
-            return await _materializedViewRepository.UpsertAsync(expectedVersion, entity);
-        }
-
-        return null;
-    }
-    
     protected async Task InvokeDaprMethods(Guid id, IEnumerable<IEvent> events)
     {
         if (id != Guid.Empty && events.Any())
