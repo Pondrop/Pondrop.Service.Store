@@ -51,6 +51,7 @@ public class EventRepository : IEventRepository
                 _config.ConnectionString,
                 new CosmosClientOptions()
                 {
+                    AllowBulkExecution = true,
                     ApplicationName = _config.ApplicationName,
                     SerializerOptions = new CosmosSerializationOptions() { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase }
                 });

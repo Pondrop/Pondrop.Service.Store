@@ -46,6 +46,7 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
                 _config.ConnectionString,
                 new CosmosClientOptions()
                 {
+                    AllowBulkExecution = true,
                     ApplicationName = _config.ApplicationName,
                     SerializerOptions = new CosmosSerializationOptions() { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase }
                 });

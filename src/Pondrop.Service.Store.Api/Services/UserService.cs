@@ -5,4 +5,5 @@ namespace Pondrop.Service.Store.Api.Services;
 public class UserService : IUserService
 {
     public string CurrentUserName() => "admin";
+    public string GetMaterializedViewUserName() => "materialized_view";
 }

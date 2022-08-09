@@ -1,4 +1,5 @@
 using MediatR;
+using Pondrop.Service.Store.Application.Commands;
 
 namespace Pondrop.Service.Store.Api.Services;
 
@@ -32,6 +33,16 @@ public class UpdateMaterializeViewHostedService : BackgroundService
                 using var scoped = _serviceProvider.CreateScope();
                 var mediator = scoped.ServiceProvider.GetService<IMediator>();
                 await mediator!.Send(command, stoppingToken);
+
+                switch (command)
+                {
+                    case UpdateRetailerMaterializedViewByIdCommand retailer:
+                        await mediator!.Send(new UpdateStoreRelationshipsCommand() { RetailerId = retailer.Id}, stoppingToken);
+                        break;
+                    case UpdateStoreTypeMaterializedViewByIdCommand storeType:
+                        await mediator!.Send(new UpdateStoreRelationshipsCommand() { StoreTypeId = storeType.Id}, stoppingToken);
+                        break;;
+                }
             }
             catch (Exception ex)
             {
