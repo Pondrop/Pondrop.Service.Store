@@ -46,7 +46,8 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
                 _config.ConnectionString,
                 new CosmosClientOptions()
                 {
-                    ApplicationName = _config.ApplicationName
+                    ApplicationName = _config.ApplicationName,
+                    SerializerOptions = new CosmosSerializationOptions() { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase }
                 });
     }
     public async Task<bool> IsConnectedAsync()
@@ -164,5 +165,32 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         }
         
         return default;
+    }
+
+    public async Task<List<T>> QueryAsync(string sqlQueryText, Dictionary<string, string>? parameters = null)
+    {
+        var list = new List<T>();
+        
+        if (!string.IsNullOrEmpty(sqlQueryText) && await IsConnectedAsync())
+        {
+            var queryDefinition = new QueryDefinition(sqlQueryText);
+
+            if (parameters?.Any() == true)
+            {
+                foreach (var kv in parameters)
+                {
+                    queryDefinition = queryDefinition.WithParameter(kv.Key, kv.Value);
+                }
+            }
+
+            var iterator = _container!.GetItemQueryIterator<T>(queryDefinition);
+            while (iterator.HasMoreResults)
+            {
+                var page = await iterator.ReadNextAsync();
+                list.AddRange(page.Resource);
+            }
+        }
+        
+        return list;
     }
 }

@@ -58,11 +58,11 @@ public abstract class DirtyCommandHandler<TRequest, TResponse, TEntity, TUpdateB
             // }
 
             // Send Events to Event Grid
-            if (!string.IsNullOrWhiteSpace(_daprUpdateConfig.EventTopic))
-            {
-                var bindingInvoked = await _daprService.SendEventsAsync(_daprUpdateConfig.EventTopic, events);
-                System.Diagnostics.Debug.WriteLine($"{GetType().Name} Dapr Send Events {(bindingInvoked ? "Success" : "Fail")}");
-            }
+            // if (!string.IsNullOrWhiteSpace(_daprUpdateConfig.EventTopic))
+            // {
+            //     var bindingInvoked = await _daprService.SendEventsAsync(_daprUpdateConfig.EventTopic, events);
+            //     System.Diagnostics.Debug.WriteLine($"{GetType().Name} Dapr Send Events {(bindingInvoked ? "Success" : "Fail")}");
+            // }
         }
     }
 }

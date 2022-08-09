@@ -13,4 +13,6 @@ public interface IMaterializedViewRepository<T> where T : EventEntity
     
     Task<List<T>> GetAllAsync();
     Task<T?> GetByIdAsync(Guid id);
+    
+    Task<List<T>> QueryAsync(string sqlQueryText, Dictionary<string, string>? parameters = null);
 }

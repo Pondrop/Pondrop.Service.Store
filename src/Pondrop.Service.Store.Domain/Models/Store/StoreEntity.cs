@@ -57,7 +57,7 @@ public record StoreEntity : EventEntity
                 When(create, eventToApply.CreatedBy, eventToApply.CreatedUtc);
                 break;
             case UpdateStore update:
-                When(update);
+                When(update, eventToApply.CreatedBy, eventToApply.CreatedUtc);
                 break;
             case AddStoreAddress addAddress:
                 When(addAddress, eventToApply.CreatedBy, eventToApply.CreatedUtc);
@@ -75,8 +75,6 @@ public record StoreEntity : EventEntity
         Events.Add(eventToApply);
         
         AtSequence = eventToApply.SequenceNumber;
-        UpdatedBy = eventToApply.CreatedBy;
-        UpdatedUtc = eventToApply.CreatedUtc;
     }
     
     public sealed override void Apply(IEventPayload eventPayloadToApply, string createdBy)
@@ -99,16 +97,30 @@ public record StoreEntity : EventEntity
         ExternalReferenceId = create.ExternalReferenceId;
         Retailer = create.Retailer;
         StoreType = create.StoreType;
-        CreatedBy = createdBy;
-        CreatedUtc = createdUtc;
+        CreatedBy = UpdatedBy  = createdBy;
+        CreatedUtc = UpdatedUtc = createdUtc;
     }
     
-    private void When(UpdateStore update)
+    private void When(UpdateStore update, string createdBy, DateTime createdUtc)
     {
+        var oldName = Name;
+        var oldStatus = Status;
+        var oldRetailerId = Retailer.Id;
+        var oldStoreTypeId = StoreType.Id;
+        
         Name = update.Name ?? Name;
         Status = update.Status ?? Status;
         Retailer = update.Retailer ?? Retailer;
         StoreType = update.StoreType ?? StoreType;
+
+        if (oldName != Name ||
+            oldStatus != Status ||
+            oldRetailerId != Retailer.Id ||
+            oldStoreTypeId != StoreType.Id)
+        {
+            UpdatedBy  = createdBy;
+            UpdatedUtc = createdUtc;
+        }
     }
     
     private void When(AddStoreAddress addAddress, string createdBy, DateTime createdUtc)
