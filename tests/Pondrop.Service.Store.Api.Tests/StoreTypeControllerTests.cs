@@ -151,6 +151,47 @@ namespace Pondrop.Service.Store.Api.Tests
         }
         
         [Fact]
+        public async void UpdateStoreTypeCommand_ShouldReturnOkResult()
+        {
+            // arrange
+            var cmd = StoreTypeFaker.GetUpdateStoreTypeCommand();
+            var item = StoreTypeFaker.GetStoreTypeRecord(cmd);
+            _mediatorMock
+                .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<StoreTypeRecord>.Success(item));
+            var controller = GetController();
+        
+            // act
+            var response = await controller.UpdateStoreType(cmd);
+        
+            // assert
+            Assert.IsType<OkObjectResult>(response);
+            Assert.Equal(((OkObjectResult)response).StatusCode, StatusCodes.Status200OK);
+            Assert.Equal(((OkObjectResult)response).Value, item);
+            _mediatorMock.Verify(x => x.Send(cmd, It.IsAny<CancellationToken>()), Times.Once());
+            _updateMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.Is<UpdateMaterializedViewByIdCommand>(c => c.Id == item.Id)));
+        }
+        
+        [Fact]
+        public async void UpdateStoreTypeCommand_ShouldReturnBadResult_WhenFailedResult()
+        {
+            // arrange
+            var failedResult = Result<StoreTypeRecord>.Error("Invalid result!");
+            _mediatorMock
+                .Setup(x => x.Send(It.IsAny<UpdateStoreTypeCommand>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResult);
+            var controller = GetController();
+        
+            // act
+            var response = await controller.UpdateStoreType(new UpdateStoreTypeCommand());
+        
+            // assert
+            Assert.IsType<BadRequestObjectResult>(response);
+            Assert.Equal(((ObjectResult)response).Value, failedResult.ErrorMessage);
+            _mediatorMock.Verify(x => x.Send(It.IsAny<UpdateStoreTypeCommand>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+        
+        [Fact]
         public async void UpdateMaterializedView_ShouldReturnOkResult()
         {
             // arrange

@@ -1,5 +1,6 @@
 using Bogus;
 using Pondrop.Service.Store.Application.Commands;
+using Pondrop.Service.Store.Domain.Events.Store;
 using Pondrop.Service.Store.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -144,7 +145,7 @@ public static class StoreFaker
         var utcNow = DateTime.UtcNow;
         
         var faker = new Faker<StoreRecord>()
-            .RuleFor(x => x.Id, f => Guid.NewGuid())
+            .RuleFor(x => x.Id, f => command.Id)
             .RuleFor(x => x.Name, f => command.Name ?? f.PickRandom(Names))
             .RuleFor(x => x.ExternalReferenceId, f => Guid.NewGuid().ToString())
             .RuleFor(x => x.Addresses, f => GetStoreAddressRecords(1))

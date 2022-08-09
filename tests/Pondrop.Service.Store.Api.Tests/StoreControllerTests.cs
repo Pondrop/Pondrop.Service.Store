@@ -151,6 +151,172 @@ namespace Pondrop.Service.Store.Api.Tests
         }
         
         [Fact]
+        public async void UpdateStoreCommand_ShouldReturnOkResult()
+        {
+            // arrange
+            var cmd = StoreFaker.GetUpdateStoreCommand();
+            var item = StoreFaker.GetStoreRecord(cmd);
+            _mediatorMock
+                .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<StoreRecord>.Success(item));
+            var controller = GetController();
+        
+            // act
+            var response = await controller.UpdateStore(cmd);
+        
+            // assert
+            Assert.IsType<OkObjectResult>(response);
+            Assert.Equal(((OkObjectResult)response).Value, item);
+            _mediatorMock.Verify(x => x.Send(cmd, It.IsAny<CancellationToken>()), Times.Once());
+            _updateMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.Is<UpdateMaterializedViewByIdCommand>(c => c.Id == item.Id)));
+        }
+        
+        [Fact]
+        public async void UpdateStoreCommand_ShouldReturnBadResult_WhenFailedResult()
+        {
+            // arrange
+            var failedResult = Result<StoreRecord>.Error("Invalid result!");
+            _mediatorMock
+                .Setup(x => x.Send(It.IsAny<UpdateStoreCommand>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResult);
+            var controller = GetController();
+        
+            // act
+            var response = await controller.UpdateStore(new UpdateStoreCommand());
+        
+            // assert
+            Assert.IsType<BadRequestObjectResult>(response);
+            Assert.Equal(((ObjectResult)response).Value, failedResult.ErrorMessage);
+            _mediatorMock.Verify(x => x.Send(It.IsAny<UpdateStoreCommand>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+        
+        [Fact]
+        public async void AddAddressToStoreCommand_ShouldReturnOkResult()
+        {
+            // arrange
+            var cmd = StoreFaker.GetAddAddressToStoreCommand();
+            var item = StoreFaker.GetStoreRecords(1).Single() with { Id = cmd.StoreId };
+            _mediatorMock
+                .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<StoreRecord>.Success(item));
+            var controller = GetController();
+        
+            // act
+            var response = await controller.AddAddressToStore(cmd);
+        
+            // assert
+            Assert.IsType<ObjectResult>(response);
+            Assert.Equal(((ObjectResult)response).StatusCode, StatusCodes.Status201Created);
+            Assert.Equal(((ObjectResult)response).Value, item);
+            _mediatorMock.Verify(x => x.Send(cmd, It.IsAny<CancellationToken>()), Times.Once());
+            _updateMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.Is<UpdateMaterializedViewByIdCommand>(c => c.Id == item.Id)));
+        }
+        
+        [Fact]
+        public async void AddAddressToStoreCommand_ShouldReturnBadResult_WhenFailedResult()
+        {
+            // arrange
+            var failedResult = Result<StoreRecord>.Error("Invalid result!");
+            _mediatorMock
+                .Setup(x => x.Send(It.IsAny<AddAddressToStoreCommand>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResult);
+            var controller = GetController();
+        
+            // act
+            var response = await controller.AddAddressToStore(new AddAddressToStoreCommand());
+        
+            // assert
+            Assert.IsType<BadRequestObjectResult>(response);
+            Assert.Equal(((ObjectResult)response).Value, failedResult.ErrorMessage);
+            _mediatorMock.Verify(x => x.Send(It.IsAny<AddAddressToStoreCommand>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+        
+        [Fact]
+        public async void RemoveAddressToStoreCommand_ShouldReturnOkResult()
+        {
+            // arrange
+            var item = StoreFaker.GetStoreRecords(1).Single();
+            var cmd = new RemoveAddressFromStoreCommand()
+            {
+                Id = item.Addresses.First().Id,
+                StoreId = item.Id
+            };
+            _mediatorMock
+                .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<StoreRecord>.Success(item));
+            var controller = GetController();
+        
+            // act
+            var response = await controller.RemoveAddressFromStore(cmd);
+        
+            // assert
+            Assert.IsType<OkObjectResult>(response);
+            Assert.Equal(((OkObjectResult)response).Value, item);
+            _mediatorMock.Verify(x => x.Send(cmd, It.IsAny<CancellationToken>()), Times.Once());
+            _updateMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.Is<UpdateMaterializedViewByIdCommand>(c => c.Id == item.Id)));
+        }
+        
+        [Fact]
+        public async void RemoveAddressToStoreCommand_ShouldReturnBadResult_WhenFailedResult()
+        {
+            // arrange
+            var failedResult = Result<StoreRecord>.Error("Invalid result!");
+            _mediatorMock
+                .Setup(x => x.Send(It.IsAny<RemoveAddressFromStoreCommand>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResult);
+            var controller = GetController();
+        
+            // act
+            var response = await controller.RemoveAddressFromStore(new RemoveAddressFromStoreCommand());
+        
+            // assert
+            Assert.IsType<BadRequestObjectResult>(response);
+            Assert.Equal(((ObjectResult)response).Value, failedResult.ErrorMessage);
+            _mediatorMock.Verify(x => x.Send(It.IsAny<RemoveAddressFromStoreCommand>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+        
+        [Fact]
+        public async void UpdateStoreAddressCommand_ShouldReturnOkResult()
+        {
+            // arrange
+            var cmd = StoreFaker.GetUpdateStoreAddressCommand();
+            var item = StoreFaker.GetStoreRecords(1).Single() with { Id = cmd.StoreId };
+            item.Addresses[0] = item.Addresses[0] with { Id = cmd.Id };
+            _mediatorMock
+                .Setup(x => x.Send(cmd, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<StoreRecord>.Success(item));
+            var controller = GetController();
+        
+            // act
+            var response = await controller.UpdateStoreAddressStore(cmd);
+        
+            // assert
+            Assert.IsType<OkObjectResult>(response);
+            Assert.Equal(((OkObjectResult)response).Value, item);
+            _mediatorMock.Verify(x => x.Send(cmd, It.IsAny<CancellationToken>()), Times.Once());
+            _updateMaterializeViewQueueServiceMock.Verify(x => x.Queue(It.Is<UpdateMaterializedViewByIdCommand>(c => c.Id == item.Id)));
+        }
+        
+        [Fact]
+        public async void UpdateStoreAddressCommand_ShouldReturnBadResult_WhenFailedResult()
+        {
+            // arrange
+            var failedResult = Result<StoreRecord>.Error("Invalid result!");
+            _mediatorMock
+                .Setup(x => x.Send(It.IsAny<UpdateStoreAddressCommand>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(failedResult);
+            var controller = GetController();
+        
+            // act
+            var response = await controller.UpdateStoreAddressStore(new UpdateStoreAddressCommand());
+        
+            // assert
+            Assert.IsType<BadRequestObjectResult>(response);
+            Assert.Equal(((ObjectResult)response).Value, failedResult.ErrorMessage);
+            _mediatorMock.Verify(x => x.Send(It.IsAny<UpdateStoreAddressCommand>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+        
+        [Fact]
         public async void UpdateMaterializedView_ShouldReturnOkResult()
         {
             // arrange
