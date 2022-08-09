@@ -24,31 +24,31 @@ public record StoreEntity : EventEntity
             Apply(e);
         }
     }
-    
+
     public StoreEntity(string name, string status, string externalReferenceId, RetailerRecord retailer, StoreTypeRecord storeType, string createdBy) : this()
     {
         var create = new CreateStore(Guid.NewGuid(), name, status, externalReferenceId, retailer, storeType);
         Apply(create, createdBy);
     }
-    
+
     [JsonProperty(PropertyName = "name")]
     public string Name { get; private set; }
-    
+
     [JsonProperty(PropertyName = "status")]
     public string Status { get; private set; }
-    
+
     [JsonProperty(PropertyName = "externalReferenceId")]
     public string ExternalReferenceId { get; private set; }
 
     [JsonProperty(PropertyName = "addresses")]
     public List<StoreAddressRecord> Addresses { get; private set; }
-    
+
     [JsonProperty(PropertyName = "retailer")]
     public RetailerRecord Retailer { get; private set; }
 
     [JsonProperty(PropertyName = "storeType")]
     public StoreTypeRecord StoreType { get; private set; }
-    
+
     protected sealed override void Apply(IEvent eventToApply)
     {
         switch (eventToApply.GetEventPayload())
@@ -66,17 +66,17 @@ public record StoreEntity : EventEntity
                 When(updateAddress, eventToApply.CreatedBy, eventToApply.CreatedUtc);
                 break;
             case RemoveAddressFromStore removeAddress:
-                When(removeAddress);
+                When(removeAddress, eventToApply.CreatedBy, eventToApply.CreatedUtc);
                 break;
             default:
                 throw new InvalidOperationException($"Unrecognised event type for '{StreamType}', got '{eventToApply.GetType().Name}'");
         }
 
         Events.Add(eventToApply);
-        
+
         AtSequence = eventToApply.SequenceNumber;
     }
-    
+
     public sealed override void Apply(IEventPayload eventPayloadToApply, string createdBy)
     {
         if (eventPayloadToApply is CreateStore create)
@@ -97,17 +97,17 @@ public record StoreEntity : EventEntity
         ExternalReferenceId = create.ExternalReferenceId;
         Retailer = create.Retailer;
         StoreType = create.StoreType;
-        CreatedBy = UpdatedBy  = createdBy;
+        CreatedBy = UpdatedBy = createdBy;
         CreatedUtc = UpdatedUtc = createdUtc;
     }
-    
+
     private void When(UpdateStore update, string createdBy, DateTime createdUtc)
     {
         var oldName = Name;
         var oldStatus = Status;
         var oldRetailerId = Retailer.Id;
         var oldStoreTypeId = StoreType.Id;
-        
+
         Name = update.Name ?? Name;
         Status = update.Status ?? Status;
         Retailer = update.Retailer ?? Retailer;
@@ -118,11 +118,11 @@ public record StoreEntity : EventEntity
             oldRetailerId != Retailer.Id ||
             oldStoreTypeId != StoreType.Id)
         {
-            UpdatedBy  = createdBy;
+            UpdatedBy = createdBy;
             UpdatedUtc = createdUtc;
         }
     }
-    
+
     private void When(AddStoreAddress addAddress, string createdBy, DateTime createdUtc)
     {
         Addresses.Add(new StoreAddressRecord(
@@ -140,13 +140,16 @@ public record StoreEntity : EventEntity
             createdBy,
             createdUtc,
             createdUtc));
+
+        UpdatedBy = createdBy;
+        UpdatedUtc = createdUtc;
     }
-    
+
     private void When(UpdateStoreAddress updateAddress, string updatedBy, DateTime updatedUtc)
     {
         var address = Addresses.Single(i => i.Id == updateAddress.Id);
         var idx = Addresses.IndexOf(address);
-        
+
         Addresses[idx] = address with
         {
             AddressLine1 = updateAddress.AddressLine1 ?? address.AddressLine1,
@@ -160,11 +163,17 @@ public record StoreEntity : EventEntity
             UpdatedBy = updatedBy,
             UpdatedUtc = updatedUtc
         };
+
+        UpdatedBy = updatedBy;
+        UpdatedUtc = updatedUtc;
     }
-    
-    private void When(RemoveAddressFromStore removeItemFromList)
+
+    private void When(RemoveAddressFromStore removeItemFromList, string updatedBy, DateTime updatedUtc)
     {
         var address = Addresses.Single(i => i.Id == removeItemFromList.Id);
         Addresses.Remove(address);
+
+        UpdatedBy = updatedBy;
+        UpdatedUtc = updatedUtc;
     }
 }
