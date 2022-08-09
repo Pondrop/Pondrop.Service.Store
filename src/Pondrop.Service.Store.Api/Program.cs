@@ -7,12 +7,16 @@ using Newtonsoft.Json.Serialization;
 using Pondrop.Service.Store.Api.Configurations.Extensions;
 using Pondrop.Service.Store.Api.Middleware;
 using Pondrop.Service.Store.Api.Services;
+using Pondrop.Service.Store.Api.Services.Interface;
+using Pondrop.Service.Store.Api.Worker;
 using Pondrop.Service.Store.Application.Interfaces;
+using Pondrop.Service.Store.Application.Interfaces.ServiceBus;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Infrastructure.CosmosDb;
 using Pondrop.Service.Store.Infrastructure.Dapr;
+using Pondrop.Service.Store.Infrastructure.ServiceBus;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -73,6 +77,7 @@ services.AddFluentValidation(config =>
     });
 
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
+services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
 services.Configure<RetailerUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(RetailerUpdateConfiguration.Key));
 services.Configure<StoreTypeUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreTypeUpdateConfiguration.Key));
 services.Configure<StoreUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreUpdateConfiguration.Key));
@@ -83,7 +88,12 @@ services.AddSingleton<IEventRepository, EventRepository>();
 services.AddSingleton<IMaterializedViewRepository<RetailerEntity>, MaterializedViewRepository<RetailerEntity>>();
 services.AddSingleton<IMaterializedViewRepository<StoreTypeEntity>, MaterializedViewRepository<StoreTypeEntity>>();
 services.AddSingleton<IMaterializedViewRepository<StoreEntity>, MaterializedViewRepository<StoreEntity>>();
+services.AddSingleton<IMessagingService<RetailerEntity>, MessagingService<RetailerEntity>>();
+services.AddSingleton<IMessagingService<StoreTypeEntity>, MessagingService<StoreTypeEntity>>();
 services.AddSingleton<IDaprService, DaprService>();
+
+services.AddSingleton<IServiceBusListener, UpdateStoreListener>();
+services.AddHostedService<WorkerServiceBus>();
 
 var app = builder.Build();
 var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();

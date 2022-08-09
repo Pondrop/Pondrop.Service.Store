@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
+using Pondrop.Service.Store.Application.Interfaces.ServiceBus;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Events.Retailer;
@@ -16,18 +17,18 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
-    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
     private readonly IMediator _mediator;
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
-    private readonly IValidator<UpdateRetailerCommand> _validator;    
+    private readonly IValidator<UpdateRetailerCommand> _validator;
     private readonly ILogger<UpdateRetailerCommandHandler> _logger;
+    private readonly IMessagingService<RetailerEntity> _retailerMessagingService;
 
     public UpdateRetailerCommandHandler(
         IOptions<RetailerUpdateConfiguration> retailerUpdateConfig,
         IEventRepository eventRepository,
+        IMessagingService<RetailerEntity> retailerMessagingService,
         IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
-        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IMediator mediator,
         IUserService userService,
         IDaprService daprService,
@@ -37,12 +38,12 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;
-        _storeViewRepository = storeViewRepository;
         _mediator = mediator;
         _userService = userService;
         _mapper = mapper;
         _validator = validator;
         _logger = logger;
+        _retailerMessagingService = retailerMessagingService;
     }
 
     public override async Task<Result<RetailerRecord>> Handle(UpdateRetailerCommand command, CancellationToken cancellationToken)
@@ -65,14 +66,16 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
             if (retailerEntity is not null)
             {
                 retailerEntity.Apply(new UpdateRetailer(command.Name), _userService.CurrentUserName());
-                
+
                 var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, retailerEntity.AtSequence - 1, retailerEntity.GetEvents(retailerEntity.AtSequence));
 
-                await Task.WhenAll(
-                    UpdateMaterializedView(retailerEntity.AtSequence - 1, retailerEntity),
-                    InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
-                await UpdateStoresAsync(retailerEntity.Id);
-                
+                //await Task.WhenAll(
+                //    UpdateMaterializedView(retailerEntity.AtSequence - 1, retailerEntity),
+                //    InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
+                //await UpdateStoresAsync(retailerEntity.Id);
+
+                await _retailerMessagingService.SendMessageAsync(command);
+
                 result = success
                     ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))
                     : Result<RetailerRecord>.Error(FailedToMessage(command));
@@ -90,23 +93,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
 
         return result;
     }
-    
-    private async Task UpdateStoresAsync(Guid updatedRetailerId)
-    {
-        const string retailerIdKey = "@retailerId";
-        var affectedStores = await _storeViewRepository.QueryAsync(
-            $"SELECT * FROM c WHERE c.retailer.id = {retailerIdKey}",
-            new Dictionary<string, string>() { [retailerIdKey] = updatedRetailerId.ToString() });
 
-        var updateTasks = affectedStores.Select(i =>
-        {
-            var command = new UpdateStoreCommand() { Id = i.Id, RetailerId = updatedRetailerId };
-            return _mediator.Send(command);
-        }).ToList();
-
-        await Task.WhenAll(updateTasks);
-    }
-    
     private static string FailedToMessage(UpdateRetailerCommand command) =>
         $"Failed to update retailer '{JsonConvert.SerializeObject(command)}'";
 }

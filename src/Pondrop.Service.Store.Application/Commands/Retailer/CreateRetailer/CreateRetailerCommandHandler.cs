@@ -16,7 +16,7 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<CreateRetailerCommand> _validator;    
+    private readonly IValidator<CreateRetailerCommand> _validator;
     private readonly ILogger<CreateRetailerCommandHandler> _logger;
 
     public CreateRetailerCommandHandler(
@@ -55,9 +55,9 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
             var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, 0, retailerEntity.GetEvents());
 
             await Task.WhenAll(
-                UpdateMaterializedView(0, retailerEntity),
-                InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
-            
+               UpdateMaterializedView(0, retailerEntity),
+               InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
+
             result = success
                 ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))
                 : Result<RetailerRecord>.Error(FailedToCreateMessage(command));
