@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Queries;
 
@@ -10,13 +11,19 @@ namespace Pondrop.Service.Store.ApiControllers;
 public class StoreController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUpdateMaterializeViewQueueService _updateMaterializeViewQueue;
+    private readonly IRebuildMaterializeViewQueueService _rebuildMaterializeViewQueueService;
     private readonly ILogger<StoreController> _logger;
 
     public StoreController(
         IMediator mediator,
+        IUpdateMaterializeViewQueueService updateMaterializeViewQueue,
+        IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService, 
         ILogger<StoreController> logger)
     {
         _mediator = mediator;
+        _updateMaterializeViewQueue = updateMaterializeViewQueue;
+        _rebuildMaterializeViewQueueService = rebuildMaterializeViewQueueService;
         _logger = logger;
     }
     
@@ -52,7 +59,11 @@ public class StoreController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => StatusCode(StatusCodes.Status201Created, i),
+            i =>
+            {
+                _updateMaterializeViewQueue.Queue(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                return StatusCode(StatusCodes.Status201Created, i);
+            },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
@@ -64,7 +75,11 @@ public class StoreController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => new OkObjectResult(i),
+            i =>
+            {
+                _updateMaterializeViewQueue.Queue(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                return new OkObjectResult(i);
+            },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
@@ -76,7 +91,11 @@ public class StoreController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => StatusCode(StatusCodes.Status201Created, i),
+            i =>
+            {
+                _updateMaterializeViewQueue.Queue(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                return StatusCode(StatusCodes.Status201Created, i);
+            },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
@@ -88,7 +107,11 @@ public class StoreController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => new OkObjectResult(i),
+            i =>
+            {
+                _updateMaterializeViewQueue.Queue(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                return new OkObjectResult(i);
+            },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
@@ -100,7 +123,11 @@ public class StoreController : ControllerBase
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
-            i => new OkObjectResult(i),
+            i =>
+            {
+                _updateMaterializeViewQueue.Queue(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                return new OkObjectResult(i);
+            },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
     
@@ -118,13 +145,10 @@ public class StoreController : ControllerBase
     
     [HttpPost]
     [Route("rebuild/view")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> RebuildMaterializedView()
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public IActionResult RebuildMaterializedView()
     {
-        var result = await _mediator.Send(new RebuildStoreMaterializedViewCommand());
-        return result.Match<IActionResult>(
-            i => new OkResult(),
-            (ex, msg) => new BadRequestObjectResult(msg));
+        _rebuildMaterializeViewQueueService.Queue(new RebuildStoreMaterializedViewCommand());
+        return new AcceptedResult();
     }
 }

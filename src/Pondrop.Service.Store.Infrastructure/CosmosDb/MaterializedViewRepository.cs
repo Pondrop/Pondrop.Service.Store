@@ -121,7 +121,7 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
                 JsonConvert.SerializeObject(entity)
             };
 
-            await _container!.Scripts.ExecuteStoredProcedureAsync<T?>(SpUpsertMaterializedView,
+            return await _container!.Scripts.ExecuteStoredProcedureAsync<T?>(SpUpsertMaterializedView,
                 new PartitionKey(idString), parameters);
         }
 
@@ -160,8 +160,15 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         if (id != Guid.Empty && await IsConnectedAsync())
         {
             var idString = id.ToString();
-            var result = await _container!.ReadItemAsync<T>(idString, new PartitionKey(idString));
-            return result.Resource;
+            try
+            {
+                var result = await _container!.ReadItemAsync<T>(idString, new PartitionKey(idString));
+                return result.Resource;
+            }
+            catch (CosmosException e) when(e.StatusCode == HttpStatusCode.NotFound)
+            {
+                // eat
+            }
         }
         
         return default;

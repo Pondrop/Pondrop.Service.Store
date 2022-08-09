@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCommand, Result<RetailerRecord>, RetailerEntity, UpdateRetailerMaterializedViewByIdCommand>
+public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCommand, Result<RetailerRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
@@ -22,12 +22,11 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
     public CreateRetailerCommandHandler(
         IOptions<RetailerUpdateConfiguration> retailerUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<CreateRetailerCommand> validator,
-        ILogger<CreateRetailerCommandHandler> logger) : base(retailerViewRepository, retailerUpdateConfig.Value, daprService, logger)
+        ILogger<CreateRetailerCommandHandler> logger) : base(retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -55,7 +54,6 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
             var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, 0, retailerEntity.GetEvents());
 
             await Task.WhenAll(
-                UpdateMaterializedView(0, retailerEntity),
                 InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
             
             result = success

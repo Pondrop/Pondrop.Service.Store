@@ -12,7 +12,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCommand, Result<RetailerRecord>, RetailerEntity, UpdateRetailerMaterializedViewByIdCommand>
+public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCommand, Result<RetailerRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
@@ -33,7 +33,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
         IDaprService daprService,
         IMapper mapper,
         IValidator<UpdateRetailerCommand> validator,
-        ILogger<UpdateRetailerCommandHandler> logger) : base(retailerViewRepository, retailerUpdateConfig.Value, daprService, logger)
+        ILogger<UpdateRetailerCommandHandler> logger) : base(retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;
@@ -69,7 +69,6 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
                 var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, retailerEntity.AtSequence - 1, retailerEntity.GetEvents(retailerEntity.AtSequence));
 
                 await Task.WhenAll(
-                    UpdateMaterializedView(retailerEntity.AtSequence - 1, retailerEntity),
                     InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
                 await UpdateStoresAsync(retailerEntity.Id);
                 
