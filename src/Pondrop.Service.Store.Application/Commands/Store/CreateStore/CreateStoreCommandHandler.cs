@@ -11,7 +11,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateStoreCommandHandler : DirtyCommandHandler<CreateStoreCommand, Result<StoreRecord>>
+public class CreateStoreCommandHandler : DirtyCommandHandler<StoreEntity, CreateStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
@@ -30,7 +30,7 @@ public class CreateStoreCommandHandler : DirtyCommandHandler<CreateStoreCommand,
         IUserService userService,
         IMapper mapper,
         IValidator<CreateStoreCommand> validator,
-        ILogger<CreateStoreCommandHandler> logger) : base(storeUpdateConfig.Value, daprService, logger)
+        ILogger<CreateStoreCommandHandler> logger) : base(eventRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;

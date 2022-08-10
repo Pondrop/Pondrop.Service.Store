@@ -12,7 +12,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCommand, Result<RetailerRecord>>
+public class UpdateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, UpdateRetailerCommand, Result<RetailerRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
@@ -29,7 +29,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
         IDaprService daprService,
         IMapper mapper,
         IValidator<UpdateRetailerCommand> validator,
-        ILogger<UpdateRetailerCommandHandler> logger) : base(retailerUpdateConfig.Value, daprService, logger)
+        ILogger<UpdateRetailerCommandHandler> logger) : base(eventRepository, retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;
@@ -89,28 +89,6 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
         }
 
         return result;
-    }
-
-    private async Task<RetailerEntity?> GetFromStreamAsync(Guid id)
-    {
-        var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<RetailerEntity>(id));
-        if (stream.Events.Any())
-            return new RetailerEntity(stream.Events);
-
-        return null;
-    }
-
-    private async Task<bool> UpdateStreamAsync(RetailerEntity entity, IEventPayload evtPayload, string createdBy)
-    {
-        var appliedEntity = entity with { };
-        appliedEntity.Apply(evtPayload, createdBy);
-
-        var success = await _eventRepository.AppendEventsAsync(appliedEntity.StreamId, appliedEntity.AtSequence - 1, appliedEntity.GetEvents(appliedEntity.AtSequence));
-
-        if (success)
-            entity.Apply(evtPayload, createdBy);
-
-        return success;
     }
 
     private static string FailedToMessage(UpdateRetailerCommand command) =>

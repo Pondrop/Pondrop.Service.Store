@@ -6,29 +6,33 @@ using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
+using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Events.Store;
 using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateStoreAddressCommandHandler : DirtyCommandHandler<UpdateStoreAddressCommand, Result<StoreRecord>>
+public class UpdateStoreAddressCommandHandler : DirtyCommandHandler<StoreEntity, UpdateStoreAddressCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
+    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<UpdateStoreAddressCommand> _validator;    
+    private readonly IValidator<UpdateStoreAddressCommand> _validator;
     private readonly ILogger<UpdateStoreAddressCommandHandler> _logger;
 
     public UpdateStoreAddressCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
+        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<UpdateStoreAddressCommand> validator,
-        ILogger<UpdateStoreAddressCommandHandler> logger) : base(storeUpdateConfig.Value, daprService, logger)
+        ILogger<UpdateStoreAddressCommandHandler> logger) : base(eventRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
+        _storeViewRepository = storeViewRepository;
         _mapper = mapper;
         _userService = userService;
         _validator = validator;
@@ -50,38 +54,38 @@ public class UpdateStoreAddressCommandHandler : DirtyCommandHandler<UpdateStoreA
 
         try
         {
-            var storeStream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<StoreEntity>(command.StoreId));
+            var storeEntity = await _storeViewRepository.GetByIdAsync(command.StoreId);
+            storeEntity ??= await GetFromStreamAsync(command.StoreId);
 
-            if (storeStream.Version >= 0)
+            if (storeEntity is not null)
             {
-                var storeEntity = new StoreEntity(storeStream.Events);
+                var evtPayload = new UpdateStoreAddress(
+                    command.Id,
+                    command.StoreId,
+                    command.AddressLine1,
+                    command.AddressLine2,
+                    command.Suburb,
+                    command.State,
+                    command.Postcode,
+                    command.Country,
+                    command.Latitude,
+                    command.Longitude);
+                var createdBy = _userService.CurrentUserName();
 
-                if (storeEntity.Addresses.Any(i => i.Id == command.Id))
-                {
-                    storeEntity.Apply(new UpdateStoreAddress(
-                        command.Id,
-                        command.StoreId,
-                        command.AddressLine1,
-                        command.AddressLine2,
-                        command.Suburb,
-                        command.State,
-                        command.Postcode,
-                        command.Country,
-                        command.Latitude,
-                        command.Longitude), _userService.CurrentUserName());
-                    var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
+                var success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
 
-                    await Task.WhenAll(
-                        InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
-            
-                    result = success
-                        ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
-                        : Result<StoreRecord>.Error(FailedToCreateMessage(command));   
-                }
-                else
+                if (!success)
                 {
-                    result = Result<StoreRecord>.Error("Address does not exist for store");
+                    await _storeViewRepository.FastForwardAsync(storeEntity);
+                    success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
                 }
+
+                await Task.WhenAll(
+                    InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
+
+                result = success
+                    ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
+                    : Result<StoreRecord>.Error(FailedToCreateMessage(command));
             }
             else
             {

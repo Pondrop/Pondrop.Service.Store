@@ -11,12 +11,12 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCommand, Result<RetailerRecord>>
+public class CreateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, CreateRetailerCommand, Result<RetailerRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<CreateRetailerCommand> _validator;    
+    private readonly IValidator<CreateRetailerCommand> _validator;
     private readonly ILogger<CreateRetailerCommandHandler> _logger;
 
     public CreateRetailerCommandHandler(
@@ -26,7 +26,7 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
         IUserService userService,
         IMapper mapper,
         IValidator<CreateRetailerCommand> validator,
-        ILogger<CreateRetailerCommandHandler> logger) : base(retailerUpdateConfig.Value, daprService, logger)
+        ILogger<CreateRetailerCommandHandler> logger) : base(eventRepository, retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;
@@ -55,7 +55,7 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
 
             await Task.WhenAll(
                 InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
-            
+
             result = success
                 ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))
                 : Result<RetailerRecord>.Error(FailedToCreateMessage(command));

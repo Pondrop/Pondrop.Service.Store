@@ -10,12 +10,12 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class CreateStoreTypeCommandHandler : DirtyCommandHandler<CreateStoreTypeCommand, Result<StoreTypeRecord>>
+public class CreateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity, CreateStoreTypeCommand, Result<StoreTypeRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<CreateStoreTypeCommand> _validator;    
+    private readonly IValidator<CreateStoreTypeCommand> _validator;
     private readonly ILogger<CreateStoreTypeCommandHandler> _logger;
 
     public CreateStoreTypeCommandHandler(
@@ -25,7 +25,7 @@ public class CreateStoreTypeCommandHandler : DirtyCommandHandler<CreateStoreType
         IUserService userService,
         IMapper mapper,
         IValidator<CreateStoreTypeCommand> validator,
-        ILogger<CreateStoreTypeCommandHandler> logger) : base(storeTypeUpdateConfig.Value, daprService, logger)
+        ILogger<CreateStoreTypeCommandHandler> logger) : base(eventRepository, storeTypeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _mapper = mapper;

@@ -6,29 +6,33 @@ using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
+using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Events.Store;
 using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToStoreCommand, Result<StoreRecord>>
+public class AddAddressToStoreCommandHandler : DirtyCommandHandler<StoreEntity, AddAddressToStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
+    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<AddAddressToStoreCommand> _validator;    
+    private readonly IValidator<AddAddressToStoreCommand> _validator;
     private readonly ILogger<AddAddressToStoreCommandHandler> _logger;
 
     public AddAddressToStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
+        IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
         IValidator<AddAddressToStoreCommand> validator,
-        ILogger<AddAddressToStoreCommandHandler> logger) : base(storeUpdateConfig.Value, daprService, logger)
+        ILogger<AddAddressToStoreCommandHandler> logger) : base(eventRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
+        _storeViewRepository = storeViewRepository;
         _mapper = mapper;
         _userService = userService;
         _validator = validator;
@@ -50,12 +54,12 @@ public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToS
 
         try
         {
-            var storeStream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<StoreEntity>(command.StoreId));
+            var storeEntity = await _storeViewRepository.GetByIdAsync(command.StoreId);
+            storeEntity ??= await GetFromStreamAsync(command.StoreId);
 
-            if (storeStream.Version >= 0)
+            if (storeEntity is not null)
             {
-                var storeEntity = new StoreEntity(storeStream.Events);
-                storeEntity.Apply(new AddStoreAddress(
+                var evtPayload = new AddStoreAddress(
                     Guid.NewGuid(),
                     storeEntity.Id,
                     command.ExternalReferenceId,
@@ -66,12 +70,20 @@ public class AddAddressToStoreCommandHandler : DirtyCommandHandler<AddAddressToS
                     command.Postcode,
                     command.Country,
                     command.Latitude,
-                    command.Longitude), _userService.CurrentUserName());
-                var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
+                    command.Longitude);
+                var createdBy = _userService.CurrentUserName();
+
+                var success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
+
+                if (!success)
+                {
+                    await _storeViewRepository.FastForwardAsync(storeEntity);
+                    success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
+                }
 
                 await Task.WhenAll(
                     InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
-            
+
                 result = success
                     ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
                     : Result<StoreRecord>.Error(FailedToCreateMessage(command));
