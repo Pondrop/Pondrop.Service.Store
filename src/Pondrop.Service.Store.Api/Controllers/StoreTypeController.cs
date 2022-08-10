@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Application.Commands;
+using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Queries;
 
 namespace Pondrop.Service.Store.ApiControllers;
@@ -11,22 +12,22 @@ namespace Pondrop.Service.Store.ApiControllers;
 public class StoreTypeController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IUpdateMaterializeViewQueueService _updateMaterializeViewQueue;
+    private readonly IServiceBusService _serviceBusService;
     private readonly IRebuildMaterializeViewQueueService _rebuildMaterializeViewQueueService;
     private readonly ILogger<StoreTypeController> _logger;
 
     public StoreTypeController(
         IMediator mediator,
-        IUpdateMaterializeViewQueueService updateMaterializeViewQueue,
-        IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService, 
+        IServiceBusService serviceBusService,
+        IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService,
         ILogger<StoreTypeController> logger)
     {
         _mediator = mediator;
-        _updateMaterializeViewQueue = updateMaterializeViewQueue;
+        _serviceBusService = serviceBusService;
         _rebuildMaterializeViewQueueService = rebuildMaterializeViewQueueService;
         _logger = logger;
     }
-    
+
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -37,7 +38,7 @@ public class StoreTypeController : ControllerBase
             i => new OkObjectResult(i),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
-    
+
     [HttpGet]
     [Route("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -47,7 +48,7 @@ public class StoreTypeController : ControllerBase
     {
         var result = await _mediator.Send(new GetStoreTypeByIdQuery() { Id = id });
         return result.Match<IActionResult>(
-            i => i  is not null ? new OkObjectResult(i) : new NotFoundResult(),
+            i => i is not null ? new OkObjectResult(i) : new NotFoundResult(),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
 
@@ -58,15 +59,15 @@ public class StoreTypeController : ControllerBase
     public async Task<IActionResult> CreateStoreType([FromBody] CreateStoreTypeCommand command)
     {
         var result = await _mediator.Send(command);
-        return result.Match<IActionResult>(
-            i =>
+        return await result.MatchAsync<IActionResult>(
+            async i =>
             {
-                _updateMaterializeViewQueue.Queue(new UpdateStoreTypeMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreTypeMaterializedViewByIdCommand() { Id = i!.Id });
                 return StatusCode(StatusCodes.Status201Created, i);
             },
-            (ex, msg) => new BadRequestObjectResult(msg));
+            (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
     }
-    
+
     [HttpPost]
     [Route("update")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -74,15 +75,15 @@ public class StoreTypeController : ControllerBase
     public async Task<IActionResult> UpdateStoreType([FromBody] UpdateStoreTypeCommand command)
     {
         var result = await _mediator.Send(command);
-        return result.Match<IActionResult>(
-            i =>
+        return await result.MatchAsync<IActionResult>(
+            async i =>
             {
-                _updateMaterializeViewQueue.Queue(new UpdateStoreTypeMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreTypeMaterializedViewByIdCommand() { Id = i!.Id });
                 return new OkObjectResult(i);
             },
-            (ex, msg) => new BadRequestObjectResult(msg));
+            (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
     }
-    
+
     [HttpPost]
     [Route("update/view")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -94,7 +95,7 @@ public class StoreTypeController : ControllerBase
             i => new OkObjectResult(i),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
-    
+
     [HttpPost]
     [Route("rebuild/view")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]

@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Application.Commands;
+using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Queries;
 using System.Net;
 
@@ -12,18 +13,18 @@ namespace Pondrop.Service.Store.ApiControllers;
 public class RetailerController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IUpdateMaterializeViewQueueService _updateMaterializeViewQueue;
+    private readonly IServiceBusService _serviceBusService;
     private readonly IRebuildMaterializeViewQueueService _rebuildMaterializeViewQueueService;
     private readonly ILogger<RetailerController> _logger;
 
     public RetailerController(
         IMediator mediator,
-        IUpdateMaterializeViewQueueService updateMaterializeViewQueue,
+        IServiceBusService serviceBusService,
         IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService,
         ILogger<RetailerController> logger)
     {
         _mediator = mediator;
-        _updateMaterializeViewQueue = updateMaterializeViewQueue;
+        _serviceBusService = serviceBusService;
         _rebuildMaterializeViewQueueService = rebuildMaterializeViewQueueService;
         _logger = logger;
     }
@@ -59,13 +60,13 @@ public class RetailerController : ControllerBase
     public async Task<IActionResult> CreateRetailer([FromBody] CreateRetailerCommand command)
     {
         var result = await _mediator.Send(command);
-        return result.Match<IActionResult>(
-            i =>
+        return await result.MatchAsync<IActionResult>(
+            async i =>
             {
-                _updateMaterializeViewQueue.Queue(new UpdateRetailerMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateRetailerMaterializedViewByIdCommand() { Id = i!.Id });
                 return StatusCode(StatusCodes.Status201Created, i);
             },
-            (ex, msg) => new BadRequestObjectResult(msg));
+            (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
     }
 
     [HttpPost]
@@ -75,13 +76,13 @@ public class RetailerController : ControllerBase
     public async Task<IActionResult> UpdateRetailer([FromBody] UpdateRetailerCommand command)
     {
         var result = await _mediator.Send(command);
-        return result.Match<IActionResult>(
-            i =>
+        return await result.MatchAsync<IActionResult>(
+            async i =>
             {
-                _updateMaterializeViewQueue.Queue(new UpdateRetailerMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateRetailerMaterializedViewByIdCommand() { Id = i!.Id });
                 return new OkObjectResult(i);
             },
-            (ex, msg) => new BadRequestObjectResult(msg));
+            (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
     }
 
     [HttpPost]

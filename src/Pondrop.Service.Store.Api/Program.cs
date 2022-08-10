@@ -13,6 +13,7 @@ using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Infrastructure.CosmosDb;
 using Pondrop.Service.Store.Infrastructure.Dapr;
+using Pondrop.Service.Store.Infrastructure.ServiceBus;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -73,12 +74,13 @@ services.AddFluentValidation(config =>
     });
 
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
+services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
 services.Configure<RetailerUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(RetailerUpdateConfiguration.Key));
 services.Configure<StoreTypeUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreTypeUpdateConfiguration.Key));
 services.Configure<StoreUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreUpdateConfiguration.Key));
 
-services.AddHostedService<UpdateMaterializeViewHostedService>();
-services.AddSingleton<IUpdateMaterializeViewQueueService, UpdateMaterializeViewQueueService>();
+services.AddHostedService<ServiceBusHostedService>();
+services.AddSingleton<IServiceBusListenerService, ServiceBusListenerService>();
 
 services.AddHostedService<RebuildMaterializeViewHostedService>();
 services.AddSingleton<IRebuildMaterializeViewQueueService, RebuildMaterializeViewQueueService>();
@@ -91,6 +93,7 @@ services.AddSingleton<IMaterializedViewRepository<StoreTypeEntity>, Materialized
 services.AddSingleton<IMaterializedViewRepository<StoreEntity>, MaterializedViewRepository<StoreEntity>>();
 services.AddSingleton<IViewRepository<StoreViewRecord>, ViewRepository<StoreViewRecord>>();
 services.AddSingleton<IDaprService, DaprService>();
+services.AddSingleton<IServiceBusService, ServiceBusService>();
 
 var app = builder.Build();
 var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
