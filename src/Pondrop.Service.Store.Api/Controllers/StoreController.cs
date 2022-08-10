@@ -14,18 +14,18 @@ public class StoreController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IServiceBusService _serviceBusService;
-    private readonly IRebuildMaterializeViewQueueService _rebuildMaterializeViewQueueService;
+    private readonly IRebuildCheckpointQueueService _rebuildCheckpointQueueService;
     private readonly ILogger<StoreController> _logger;
 
     public StoreController(
         IMediator mediator,
         IServiceBusService serviceBusService,
-        IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService,
+        IRebuildCheckpointQueueService rebuildCheckpointQueueService,
         ILogger<StoreController> logger)
     {
         _mediator = mediator;
         _serviceBusService = serviceBusService;
-        _rebuildMaterializeViewQueueService = rebuildMaterializeViewQueueService;
+        _rebuildCheckpointQueueService = rebuildCheckpointQueueService;
         _logger = logger;
     }
 
@@ -63,7 +63,7 @@ public class StoreController : ControllerBase
         return await result.MatchAsync<IActionResult>(
             async i =>
             {
-                await _serviceBusService.SendMessageAsync(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreCheckpointByIdCommand() { Id = i!.Id });
                 return StatusCode(StatusCodes.Status201Created, i);
             },
             (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
@@ -79,7 +79,7 @@ public class StoreController : ControllerBase
         return await result.MatchAsync<IActionResult>(
             async i =>
             {
-                await _serviceBusService.SendMessageAsync(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreCheckpointByIdCommand() { Id = i!.Id });
                 return new OkObjectResult(i);
             },
             (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
@@ -95,7 +95,7 @@ public class StoreController : ControllerBase
         return await result.MatchAsync<IActionResult>(
             async i =>
             {
-                await _serviceBusService.SendMessageAsync(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreCheckpointByIdCommand() { Id = i!.Id });
                 return StatusCode(StatusCodes.Status201Created, i);
             },
             (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
@@ -111,7 +111,7 @@ public class StoreController : ControllerBase
         return await result.MatchAsync<IActionResult>(
             async i =>
             {
-                await _serviceBusService.SendMessageAsync(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreCheckpointByIdCommand() { Id = i!.Id });
                 return new OkObjectResult(i);
             },
             (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
@@ -127,17 +127,17 @@ public class StoreController : ControllerBase
         return await result.MatchAsync<IActionResult>(
             async i =>
             {
-                await _serviceBusService.SendMessageAsync(new UpdateStoreMaterializedViewByIdCommand() { Id = i!.Id });
+                await _serviceBusService.SendMessageAsync(new UpdateStoreCheckpointByIdCommand() { Id = i!.Id });
                 return new OkObjectResult(i);
             },
             (ex, msg) => Task.FromResult<IActionResult>(new BadRequestObjectResult(msg)));
     }
 
     [HttpPost]
-    [Route("update/view")]
+    [Route("update/checkpoint")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateMaterializedView([FromBody] UpdateStoreMaterializedViewByIdCommand command)
+    public async Task<IActionResult> UpdateCheckpoint([FromBody] UpdateStoreCheckpointByIdCommand command)
     {
         var result = await _mediator.Send(command);
         return result.Match<IActionResult>(
@@ -146,11 +146,11 @@ public class StoreController : ControllerBase
     }
 
     [HttpPost]
-    [Route("rebuild/view")]
+    [Route("rebuild/checkpoint")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public IActionResult RebuildMaterializedView()
+    public IActionResult RebuildCheckpoint()
     {
-        _rebuildMaterializeViewQueueService.Queue(new RebuildStoreMaterializedViewCommand());
+        _rebuildCheckpointQueueService.Queue(new RebuildStoreCheckpointCommand());
         return new AcceptedResult();
     }
 }

@@ -15,7 +15,7 @@ namespace Pondrop.Service.Store.Application.Commands;
 public class RemoveAddressFromStoreCommandHandler : DirtyCommandHandler<StoreEntity, RemoveAddressFromStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
-    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
+    private readonly ICheckpointRepository<StoreEntity> _storeCheckpointRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
     private readonly IValidator<RemoveAddressFromStoreCommand> _validator;
@@ -24,7 +24,7 @@ public class RemoveAddressFromStoreCommandHandler : DirtyCommandHandler<StoreEnt
     public RemoveAddressFromStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<StoreEntity> storeViewRepository,
+        ICheckpointRepository<StoreEntity> storeCheckpointRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
@@ -32,7 +32,7 @@ public class RemoveAddressFromStoreCommandHandler : DirtyCommandHandler<StoreEnt
         ILogger<RemoveAddressFromStoreCommandHandler> logger) : base(eventRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
-        _storeViewRepository = storeViewRepository;
+        _storeCheckpointRepository = storeCheckpointRepository;
         _mapper = mapper;
         _userService = userService;
         _validator = validator;
@@ -54,7 +54,7 @@ public class RemoveAddressFromStoreCommandHandler : DirtyCommandHandler<StoreEnt
 
         try
         {
-            var storeEntity = await _storeViewRepository.GetByIdAsync(command.StoreId);
+            var storeEntity = await _storeCheckpointRepository.GetByIdAsync(command.StoreId);
             storeEntity ??= await GetFromStreamAsync(command.StoreId);
 
             if (storeEntity is not null)
@@ -68,7 +68,7 @@ public class RemoveAddressFromStoreCommandHandler : DirtyCommandHandler<StoreEnt
 
                 if (!success)
                 {
-                    await _storeViewRepository.FastForwardAsync(storeEntity);
+                    await _storeCheckpointRepository.FastForwardAsync(storeEntity);
                     success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
                 }
 

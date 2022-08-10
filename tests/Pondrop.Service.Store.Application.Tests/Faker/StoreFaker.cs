@@ -30,8 +30,31 @@ public static class StoreFaker
             .RuleFor(x => x.ExternalReferenceId, f => Guid.NewGuid().ToString())
             .RuleFor(x => x.Addresses, f => GetStoreAddressRecords(1))
             .RuleFor(x => x.Status, f => f.PickRandom(Statues))
-            .RuleFor(x => x.Retailer, f => RetailerFaker.GetRetailerRecords(1).Single())
-            .RuleFor(x => x.StoreType, f => StoreTypeFaker.GetStoreTypeRecords(1).Single())
+            .RuleFor(x => x.RetailerId, f => Guid.NewGuid())
+            .RuleFor(x => x.StoreTypeId, f => Guid.NewGuid())
+            .RuleFor(x => x.CreatedBy, f => f.PickRandom(UserNames))
+            .RuleFor(x => x.CreatedUtc, f => DateTime.UtcNow.AddSeconds(-1 * f.Random.Int(5000, 10000)))
+            .RuleFor(x => x.UpdatedBy, f => f.PickRandom(UserNames))
+            .RuleFor(x => x.UpdatedUtc, f => DateTime.UtcNow);
+
+        return faker.Generate(Math.Max(0, count));
+    }
+    
+    public static List<StoreViewRecord> GetStoreViewRecords(int count = 5)
+    {
+        var retailer = RetailerFaker.GetRetailerRecords(1).Single();
+        var storeType = StoreTypeFaker.GetStoreTypeRecords(1).Single();
+        
+        var faker = new Faker<StoreViewRecord>()
+            .RuleFor(x => x.Id, f => Guid.NewGuid())
+            .RuleFor(x => x.Name, f => f.PickRandom(Names))
+            .RuleFor(x => x.ExternalReferenceId, f => Guid.NewGuid().ToString())
+            .RuleFor(x => x.Addresses, f => GetStoreAddressRecords(1))
+            .RuleFor(x => x.Status, f => f.PickRandom(Statues))
+            .RuleFor(x => x.RetailerId, f => retailer.Id)
+            .RuleFor(x => x.Retailer, f => retailer)
+            .RuleFor(x => x.StoreTypeId, f => storeType.Id)
+            .RuleFor(x => x.StoreType, f => storeType)
             .RuleFor(x => x.CreatedBy, f => f.PickRandom(UserNames))
             .RuleFor(x => x.CreatedUtc, f => DateTime.UtcNow.AddSeconds(-1 * f.Random.Int(5000, 10000)))
             .RuleFor(x => x.UpdatedBy, f => f.PickRandom(UserNames))
@@ -130,8 +153,8 @@ public static class StoreFaker
                 ? new List<StoreAddressRecord>(1) { GetStoreAddressRecord(command.Address!) }
                 : GetStoreAddressRecords(1))
             .RuleFor(x => x.Status, f => command.Status)
-            .RuleFor(x => x.Retailer, f => RetailerFaker.GetRetailerRecords(1).Single() with { Id = command.RetailerId })
-            .RuleFor(x => x.StoreType, f => StoreTypeFaker.GetStoreTypeRecords(1).Single() with { Id = command.StoreTypeId })
+            .RuleFor(x => x.RetailerId, f => command.RetailerId)
+            .RuleFor(x => x.StoreTypeId, f => command.StoreTypeId)
             .RuleFor(x => x.CreatedBy, f => UserNames.First())
             .RuleFor(x => x.CreatedUtc, f => utcNow)
             .RuleFor(x => x.UpdatedBy, f => UserNames.First())
@@ -150,8 +173,8 @@ public static class StoreFaker
             .RuleFor(x => x.ExternalReferenceId, f => Guid.NewGuid().ToString())
             .RuleFor(x => x.Addresses, f => GetStoreAddressRecords(1))
             .RuleFor(x => x.Status, f => command.Status ?? f.PickRandom(Statues))
-            .RuleFor(x => x.Retailer, f => RetailerFaker.GetRetailerRecords(1).Single() with { Id = command.RetailerId ?? Guid.NewGuid() })
-            .RuleFor(x => x.StoreType, f => StoreTypeFaker.GetStoreTypeRecords(1).Single() with { Id = command.StoreTypeId ?? Guid.NewGuid() })
+            .RuleFor(x => x.RetailerId, f => command.RetailerId ?? Guid.NewGuid())
+            .RuleFor(x => x.StoreTypeId, f => command.StoreTypeId ?? Guid.NewGuid())
             .RuleFor(x => x.CreatedBy, f => UserNames.First())
             .RuleFor(x => x.CreatedUtc, f => utcNow)
             .RuleFor(x => x.UpdatedBy, f => UserNames.First())

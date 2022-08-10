@@ -14,8 +14,8 @@ namespace Pondrop.Service.Store.Application.Commands;
 public class CreateStoreCommandHandler : DirtyCommandHandler<StoreEntity, CreateStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
-    private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
-    private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
+    private readonly ICheckpointRepository<RetailerEntity> _retailerViewRepository;
+    private readonly ICheckpointRepository<StoreTypeEntity> _storeTypeViewRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
     private readonly IValidator<CreateStoreCommand> _validator;
@@ -24,8 +24,8 @@ public class CreateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Create
     public CreateStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
-        IMaterializedViewRepository<StoreTypeEntity> storeTypeViewRepository,
+        ICheckpointRepository<RetailerEntity> retailerViewRepository,
+        ICheckpointRepository<StoreTypeEntity> storeTypeViewRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,

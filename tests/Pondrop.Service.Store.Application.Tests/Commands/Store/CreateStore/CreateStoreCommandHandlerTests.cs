@@ -24,8 +24,8 @@ public class CreateStoreCommandHandlerTests
 {
     private readonly Mock<IOptions<StoreUpdateConfiguration>> _StoreUpdateConfigMock;
     private readonly Mock<IEventRepository> _eventRepositoryMock;
-    private readonly Mock<IMaterializedViewRepository<RetailerEntity>> _retailerViewRepositoryMock;
-    private readonly Mock<IMaterializedViewRepository<StoreTypeEntity>> _storeTypeViewRepositoryMock;
+    private readonly Mock<ICheckpointRepository<RetailerEntity>> _retailerViewRepositoryMock;
+    private readonly Mock<ICheckpointRepository<StoreTypeEntity>> _storeTypeViewRepositoryMock;
     private readonly Mock<IDaprService> _daprServiceMock;
     private readonly Mock<IUserService> _userServiceMock;
     private readonly Mock<IMapper> _mapperMock;
@@ -36,8 +36,8 @@ public class CreateStoreCommandHandlerTests
     {
         _StoreUpdateConfigMock = new Mock<IOptions<StoreUpdateConfiguration>>();
         _eventRepositoryMock = new Mock<IEventRepository>();
-        _retailerViewRepositoryMock = new Mock<IMaterializedViewRepository<RetailerEntity>>();
-        _storeTypeViewRepositoryMock = new Mock<IMaterializedViewRepository<StoreTypeEntity>>();
+        _retailerViewRepositoryMock = new Mock<ICheckpointRepository<RetailerEntity>>();
+        _storeTypeViewRepositoryMock = new Mock<ICheckpointRepository<StoreTypeEntity>>();
         _daprServiceMock = new Mock<IDaprService>();
         _userServiceMock = new Mock<IUserService>();
         _mapperMock = new Mock<IMapper>();

@@ -15,9 +15,9 @@ namespace Pondrop.Service.Store.Application.Commands;
 public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, UpdateStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
-    private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
-    private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
-    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
+    private readonly ICheckpointRepository<RetailerEntity> _retailerCheckpointRepository;
+    private readonly ICheckpointRepository<StoreTypeEntity> _storeTypeCheckpointRepository;
+    private readonly ICheckpointRepository<StoreEntity> _storeCheckpointRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
     private readonly IValidator<UpdateStoreCommand> _validator;
@@ -26,9 +26,9 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Update
     public UpdateStoreCommandHandler(
         IOptions<StoreUpdateConfiguration> storeUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
-        IMaterializedViewRepository<StoreTypeEntity> storeTypeViewRepository,
-        IMaterializedViewRepository<StoreEntity> storeViewRepository,
+        ICheckpointRepository<RetailerEntity> retailerCheckpointRepository,
+        ICheckpointRepository<StoreTypeEntity> storeTypeCheckpointRepository,
+        ICheckpointRepository<StoreEntity> storeCheckpointRepository,
         IDaprService daprService,
         IUserService userService,
         IMapper mapper,
@@ -36,9 +36,9 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Update
         ILogger<UpdateStoreCommandHandler> logger) : base(eventRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
-        _retailerViewRepository = retailerViewRepository;
-        _storeTypeViewRepository = storeTypeViewRepository;
-        _storeViewRepository = storeViewRepository;
+        _retailerCheckpointRepository = retailerCheckpointRepository;
+        _storeTypeCheckpointRepository = storeTypeCheckpointRepository;
+        _storeCheckpointRepository = storeCheckpointRepository;
         _mapper = mapper;
         _userService = userService;
         _validator = validator;
@@ -61,10 +61,10 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Update
         try
         {
             var retailerTask = command.RetailerId.HasValue
-                ? _retailerViewRepository.GetByIdAsync(command.RetailerId.Value)
+                ? _retailerCheckpointRepository.GetByIdAsync(command.RetailerId.Value)
                 : Task.FromResult(default(RetailerEntity?));
             var storeTypeTask = command.StoreTypeId.HasValue
-                ? _storeTypeViewRepository.GetByIdAsync(command.StoreTypeId.Value)
+                ? _storeTypeCheckpointRepository.GetByIdAsync(command.StoreTypeId.Value)
                 : Task.FromResult(default(StoreTypeEntity?));
 
             await Task.WhenAll(retailerTask, storeTypeTask);
@@ -74,7 +74,7 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Update
             if (command.StoreTypeId.HasValue && storeTypeTask.Result is null)
                 return Result<StoreRecord>.Error($"Could not find store type with id '{command.StoreTypeId}'");
 
-            var storeEntity = await _storeViewRepository.GetByIdAsync(command.Id);
+            var storeEntity = await _storeCheckpointRepository.GetByIdAsync(command.Id);
             storeEntity ??= await GetFromStreamAsync(command.Id);
 
             if (storeEntity is not null)
@@ -90,7 +90,7 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Update
 
                 if (!success)
                 {
-                    await _storeViewRepository.FastForwardAsync(storeEntity);
+                    await _storeCheckpointRepository.FastForwardAsync(storeEntity);
                     success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
                 }
 

@@ -83,15 +83,15 @@ services.AddHostedService<ServiceBusHostedService>();
 services.AddSingleton<IServiceBusListenerService, ServiceBusListenerService>();
 
 services.AddHostedService<RebuildMaterializeViewHostedService>();
-services.AddSingleton<IRebuildMaterializeViewQueueService, RebuildMaterializeViewQueueService>();
+services.AddSingleton<IRebuildCheckpointQueueService, RebuildCheckpointQueueService>();
 
 services.AddSingleton<IAddressService, AddressService>();
 services.AddSingleton<IUserService, UserService>();
 services.AddSingleton<IEventRepository, EventRepository>();
-services.AddSingleton<IMaterializedViewRepository<RetailerEntity>, MaterializedViewRepository<RetailerEntity>>();
-services.AddSingleton<IMaterializedViewRepository<StoreTypeEntity>, MaterializedViewRepository<StoreTypeEntity>>();
-services.AddSingleton<IMaterializedViewRepository<StoreEntity>, MaterializedViewRepository<StoreEntity>>();
-services.AddSingleton<IViewRepository<StoreViewRecord>, ViewRepository<StoreViewRecord>>();
+services.AddSingleton<ICheckpointRepository<RetailerEntity>, CheckpointRepository<RetailerEntity>>();
+services.AddSingleton<ICheckpointRepository<StoreTypeEntity>, CheckpointRepository<StoreTypeEntity>>();
+services.AddSingleton<ICheckpointRepository<StoreEntity>, CheckpointRepository<StoreEntity>>();
+services.AddSingleton<IContainerRepository<StoreViewRecord>, ContainerRepository<StoreViewRecord>>();
 services.AddSingleton<IDaprService, DaprService>();
 services.AddSingleton<IServiceBusService, ServiceBusService>();
 

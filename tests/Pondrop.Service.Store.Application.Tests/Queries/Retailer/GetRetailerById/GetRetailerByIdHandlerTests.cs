@@ -20,14 +20,14 @@ namespace Pondrop.Service.Store.Application.Tests.Commands.Retailer.CreateRetail
 
 public class GetRetailerByIdHandlerTests
 {
-    private readonly Mock<IMaterializedViewRepository<RetailerEntity>> _viewRepositoryMock;
+    private readonly Mock<ICheckpointRepository<RetailerEntity>> _retailerCheckpointRepositoryMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IValidator<GetRetailerByIdQuery>> _validatorMock;
     private readonly Mock<ILogger<GetRetailerByIdQueryHandler>> _loggerMock;
     
     public GetRetailerByIdHandlerTests()
     {
-        _viewRepositoryMock = new Mock<IMaterializedViewRepository<RetailerEntity>>();
+        _retailerCheckpointRepositoryMock = new Mock<ICheckpointRepository<RetailerEntity>>();
         _mapperMock = new Mock<IMapper>();
         _validatorMock = new Mock<IValidator<GetRetailerByIdQuery>>();
         _loggerMock = new Mock<ILogger<GetRetailerByIdQueryHandler>>();
@@ -42,7 +42,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _retailerCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Returns(Task.FromResult<RetailerEntity?>(new RetailerEntity()));
         _mapperMock
@@ -59,7 +59,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _retailerCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
         _mapperMock.Verify(
@@ -76,7 +76,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult(new [] { new ValidationFailure() }));
-        _viewRepositoryMock
+        _retailerCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Returns(Task.FromResult<RetailerEntity?>(new RetailerEntity()));
         _mapperMock
@@ -92,7 +92,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _retailerCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Never());
         _mapperMock.Verify(
@@ -109,7 +109,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _retailerCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Returns(Task.FromResult<RetailerEntity?>(null));
         _mapperMock
@@ -126,7 +126,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _retailerCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
         _mapperMock.Verify(
@@ -143,7 +143,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _retailerCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Throws(new Exception());
         _mapperMock
@@ -159,7 +159,7 @@ public class GetRetailerByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _retailerCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
         _mapperMock.Verify(
@@ -169,7 +169,7 @@ public class GetRetailerByIdHandlerTests
     
     private GetRetailerByIdQueryHandler GetQueryHandler() =>
         new GetRetailerByIdQueryHandler(
-            _viewRepositoryMock.Object,
+            _retailerCheckpointRepositoryMock.Object,
             _mapperMock.Object,
             _validatorMock.Object,
             _loggerMock.Object);

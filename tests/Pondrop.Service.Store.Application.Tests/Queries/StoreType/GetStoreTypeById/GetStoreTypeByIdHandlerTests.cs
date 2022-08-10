@@ -20,14 +20,14 @@ namespace Pondrop.Service.Store.Application.Tests.Commands.StoreType.CreateStore
 
 public class GetStoreTypeByIdHandlerTests
 {
-    private readonly Mock<IMaterializedViewRepository<StoreTypeEntity>> _viewRepositoryMock;
+    private readonly Mock<ICheckpointRepository<StoreTypeEntity>> _storeTypeCheckpointRepositoryMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IValidator<GetStoreTypeByIdQuery>> _validatorMock;
     private readonly Mock<ILogger<GetStoreTypeByIdQueryHandler>> _loggerMock;
     
     public GetStoreTypeByIdHandlerTests()
     {
-        _viewRepositoryMock = new Mock<IMaterializedViewRepository<StoreTypeEntity>>();
+        _storeTypeCheckpointRepositoryMock = new Mock<ICheckpointRepository<StoreTypeEntity>>();
         _mapperMock = new Mock<IMapper>();
         _validatorMock = new Mock<IValidator<GetStoreTypeByIdQuery>>();
         _loggerMock = new Mock<ILogger<GetStoreTypeByIdQueryHandler>>();
@@ -42,7 +42,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _storeTypeCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Returns(Task.FromResult<StoreTypeEntity?>(new StoreTypeEntity()));
         _mapperMock
@@ -59,7 +59,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeTypeCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
         _mapperMock.Verify(
@@ -76,7 +76,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult(new [] { new ValidationFailure() }));
-        _viewRepositoryMock
+        _storeTypeCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Returns(Task.FromResult<StoreTypeEntity?>(new StoreTypeEntity()));
         _mapperMock
@@ -92,7 +92,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeTypeCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Never());
         _mapperMock.Verify(
@@ -109,7 +109,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _storeTypeCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Returns(Task.FromResult<StoreTypeEntity?>(null));
         _mapperMock
@@ -126,7 +126,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeTypeCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
         _mapperMock.Verify(
@@ -143,7 +143,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _storeTypeCheckpointRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Throws(new Exception());
         _mapperMock
@@ -159,7 +159,7 @@ public class GetStoreTypeByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeTypeCheckpointRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
         _mapperMock.Verify(
@@ -169,7 +169,7 @@ public class GetStoreTypeByIdHandlerTests
     
     private GetStoreTypeByIdQueryHandler GetQueryHandler() =>
         new GetStoreTypeByIdQueryHandler(
-            _viewRepositoryMock.Object,
+            _storeTypeCheckpointRepositoryMock.Object,
             _mapperMock.Object,
             _validatorMock.Object,
             _loggerMock.Object);

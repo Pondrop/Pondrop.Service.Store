@@ -5,12 +5,12 @@ namespace Pondrop.Service.Store.Api.Services;
 
 public class RebuildMaterializeViewHostedService : BackgroundService
 {
-    private readonly IRebuildMaterializeViewQueueService _queue;
+    private readonly IRebuildCheckpointQueueService _queue;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<RebuildMaterializeViewHostedService> _logger;
 
     public RebuildMaterializeViewHostedService(
-        IRebuildMaterializeViewQueueService queue,
+        IRebuildCheckpointQueueService queue,
         IServiceProvider serviceProvider,
         ILogger<RebuildMaterializeViewHostedService> logger)
     {
@@ -32,7 +32,7 @@ public class RebuildMaterializeViewHostedService : BackgroundService
 
                 switch (command)
                 {
-                    case RebuildStoreMaterializedViewCommand store:
+                    case RebuildStoreCheckpointCommand store:
                         await mediator!.Send(new RebuildStoreViewCommand(), stoppingToken);
                         break;
                 }

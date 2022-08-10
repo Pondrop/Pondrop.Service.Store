@@ -20,15 +20,13 @@ namespace Pondrop.Service.Store.Application.Tests.Commands.Store.CreateStore;
 
 public class GetStoreByIdHandlerTests
 {
-    private readonly Mock<IMaterializedViewRepository<StoreEntity>> _viewRepositoryMock;
-    private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<IContainerRepository<StoreViewRecord>> _storeContainerRepositoryMock;
     private readonly Mock<IValidator<GetStoreByIdQuery>> _validatorMock;
     private readonly Mock<ILogger<GetStoreByIdQueryHandler>> _loggerMock;
     
     public GetStoreByIdHandlerTests()
     {
-        _viewRepositoryMock = new Mock<IMaterializedViewRepository<StoreEntity>>();
-        _mapperMock = new Mock<IMapper>();
+        _storeContainerRepositoryMock = new Mock<IContainerRepository<StoreViewRecord>>();
         _validatorMock = new Mock<IValidator<GetStoreByIdQuery>>();
         _loggerMock = new Mock<ILogger<GetStoreByIdQueryHandler>>();
     }
@@ -38,16 +36,12 @@ public class GetStoreByIdHandlerTests
     {
         // arrange
         var query = new GetStoreByIdQuery() { Id = Guid.NewGuid() };
-        var item = StoreFaker.GetStoreRecords(1).Single();
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _storeContainerRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
-            .Returns(Task.FromResult<StoreEntity?>(new StoreEntity()));
-        _mapperMock
-            .Setup(x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()))
-            .Returns(item);
+            .Returns(Task.FromResult<StoreViewRecord?>(new StoreViewRecord()));
         var handler = GetQueryHandler();
         
         // act
@@ -55,15 +49,11 @@ public class GetStoreByIdHandlerTests
         
         // assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(item, result.Value);
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeContainerRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
-            Times.Once());
-        _mapperMock.Verify(
-            x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()),
             Times.Once());
     }
     
@@ -72,16 +62,12 @@ public class GetStoreByIdHandlerTests
     {
         // arrange
         var query = new GetStoreByIdQuery() { Id = Guid.NewGuid() };
-        var item = StoreFaker.GetStoreRecords(1).Single();
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult(new [] { new ValidationFailure() }));
-        _viewRepositoryMock
+        _storeContainerRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
-            .Returns(Task.FromResult<StoreEntity?>(new StoreEntity()));
-        _mapperMock
-            .Setup(x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()))
-            .Returns(item);
+            .Returns(Task.FromResult<StoreViewRecord?>(new StoreViewRecord()));
         var handler = GetQueryHandler();
         
         // act
@@ -92,11 +78,8 @@ public class GetStoreByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeContainerRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
-            Times.Never());
-        _mapperMock.Verify(
-            x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()),
             Times.Never());
     }
     
@@ -105,16 +88,12 @@ public class GetStoreByIdHandlerTests
     {
         // arrange
         var query = new GetStoreByIdQuery() { Id = Guid.NewGuid() };
-        var item = StoreFaker.GetStoreRecords(1).Single();
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _storeContainerRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
-            .Returns(Task.FromResult<StoreEntity?>(null));
-        _mapperMock
-            .Setup(x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()))
-            .Returns(item);
+            .Returns(Task.FromResult<StoreViewRecord?>(null));
         var handler = GetQueryHandler();
         
         // act
@@ -126,12 +105,9 @@ public class GetStoreByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeContainerRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
-        _mapperMock.Verify(
-            x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()),
-            Times.Never());
     }
     
     [Fact]
@@ -143,12 +119,9 @@ public class GetStoreByIdHandlerTests
         _validatorMock
             .Setup(x => x.Validate(query))
             .Returns(new ValidationResult());
-        _viewRepositoryMock
+        _storeContainerRepositoryMock
             .Setup(x => x.GetByIdAsync(query.Id))
             .Throws(new Exception());
-        _mapperMock
-            .Setup(x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()))
-            .Returns(item);
         var handler = GetQueryHandler();
         
         // act
@@ -159,18 +132,14 @@ public class GetStoreByIdHandlerTests
         _validatorMock.Verify(
             x => x.Validate(query),
             Times.Once());
-        _viewRepositoryMock.Verify(
+        _storeContainerRepositoryMock.Verify(
             x => x.GetByIdAsync(query.Id),
             Times.Once());
-        _mapperMock.Verify(
-            x => x.Map<StoreRecord>(It.IsAny<StoreEntity>()),
-            Times.Never());
     }
     
     private GetStoreByIdQueryHandler GetQueryHandler() =>
         new GetStoreByIdQueryHandler(
-            _viewRepositoryMock.Object,
-            _mapperMock.Object,
+            _storeContainerRepositoryMock.Object,
             _validatorMock.Object,
             _loggerMock.Object);
 }

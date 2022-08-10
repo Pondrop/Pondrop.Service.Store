@@ -45,8 +45,8 @@ public class StoreEntityTests
         Assert.Equal(Name, entity.Name);
         Assert.Equal(Status, entity.Status);
         Assert.Equal(ExternalReferenceId, entity.ExternalReferenceId);
-        Assert.Equal(RetailerName, entity.Retailer.Name);
-        Assert.Equal(StoreTypeName, entity.StoreType.Name);
+        Assert.NotEqual(Guid.Empty, entity.RetailerId);
+        Assert.NotEqual(Guid.Empty, entity.StoreTypeId);
         Assert.Equal(CreatedBy, entity.CreatedBy);
         Assert.Equal(1, entity.EventsCount);
     }
@@ -142,8 +142,8 @@ public class StoreEntityTests
         Name,
         Status,
         ExternalReferenceId,
-        GetRetailerRecord(),
-        GetStoreTypeRecord(),
+        GetRetailerRecord().Id,
+        GetStoreTypeRecord().Id,
         CreatedBy);
     private AddStoreAddress GetAddStoreAddress(Guid storeId) => new AddStoreAddress(
         Guid.NewGuid(), 

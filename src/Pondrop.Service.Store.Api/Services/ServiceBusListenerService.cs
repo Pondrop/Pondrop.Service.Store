@@ -85,8 +85,8 @@ public class ServiceBusListenerService : IServiceBusListenerService
         {
             if (args.Message.Subject.Contains("Command"))
             {
-                var commandType = typeof(UpdateMaterializedViewByIdCommand);
-                var commandTypeName = $"{commandType.FullName!.Replace(nameof(UpdateMaterializedViewByIdCommand), args.Message.Subject)}, {commandType.Assembly.GetName()}";
+                var commandType = typeof(UpdateCheckpointByIdCommand);
+                var commandTypeName = $"{commandType.FullName!.Replace(nameof(UpdateCheckpointByIdCommand), args.Message.Subject)}, {commandType.Assembly.GetName()}";
 
                 commandType = Type.GetType(commandTypeName);
                 var payload = Encoding.UTF8.GetString(args.Message.Body);
@@ -104,13 +104,13 @@ public class ServiceBusListenerService : IServiceBusListenerService
 
                             switch (command)
                             {
-                                case UpdateRetailerMaterializedViewByIdCommand retailer:
+                                case UpdateRetailerCheckpointByIdCommand retailer:
                                     await mediator!.Send(new UpdateStoreViewCommand() { RetailerId = retailer.Id });
                                     break;
-                                case UpdateStoreTypeMaterializedViewByIdCommand storeType:
+                                case UpdateStoreTypeCheckpointByIdCommand storeType:
                                     await mediator!.Send(new UpdateStoreViewCommand() { StoreTypeId = storeType.Id });
                                     break;
-                                case UpdateStoreMaterializedViewByIdCommand store:
+                                case UpdateStoreCheckpointByIdCommand store:
                                     await mediator!.Send(new UpdateStoreViewCommand() { StoreId = store.Id });
                                     break;
                             }

@@ -15,7 +15,7 @@ namespace Pondrop.Service.Store.Application.Commands;
 public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity, UpdateStoreTypeCommand, Result<StoreTypeRecord>>
 {
     private readonly IEventRepository _eventRepository;
-    private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
+    private readonly ICheckpointRepository<StoreTypeEntity> _storeTypeCheckpointRepository;
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
     private readonly IValidator<UpdateStoreTypeCommand> _validator;
@@ -24,7 +24,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity
     public UpdateStoreTypeCommandHandler(
         IOptions<StoreTypeUpdateConfiguration> storeTypeUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<StoreTypeEntity> storeTypeViewRepository,
+        ICheckpointRepository<StoreTypeEntity> storeTypeCheckpointRepository,
         IUserService userService,
         IDaprService daprService,
         IMapper mapper,
@@ -32,7 +32,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity
         ILogger<UpdateStoreTypeCommandHandler> logger) : base(eventRepository, storeTypeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
-        _storeTypeViewRepository = storeTypeViewRepository;
+        _storeTypeCheckpointRepository = storeTypeCheckpointRepository;
         _userService = userService;
         _mapper = mapper;
         _validator = validator;
@@ -54,7 +54,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity
 
         try
         {
-            var storeTypeEntity = await _storeTypeViewRepository.GetByIdAsync(command.Id);
+            var storeTypeEntity = await _storeTypeCheckpointRepository.GetByIdAsync(command.Id);
             storeTypeEntity ??= await GetFromStreamAsync(command.Id);
 
             if (storeTypeEntity is not null)
@@ -66,7 +66,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity
 
                 if (!success)
                 {
-                    await _storeTypeViewRepository.FastForwardAsync(storeTypeEntity);
+                    await _storeTypeCheckpointRepository.FastForwardAsync(storeTypeEntity);
                     success = await UpdateStreamAsync(storeTypeEntity, evtPayload, createdBy);
                 }
 

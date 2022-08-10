@@ -10,18 +10,18 @@ namespace Pondrop.Service.Store.Application.Queries;
 
 public class GetAllStoresQueryHandler : IRequestHandler<GetAllStoresQuery, Result<List<StoreViewRecord>>>
 {
-    private readonly IViewRepository<StoreViewRecord> _viewRepository;
+    private readonly IContainerRepository<StoreViewRecord> _containerRepository;
     private readonly IMapper _mapper;
     private readonly IValidator<GetAllStoresQuery> _validator;
     private readonly ILogger<GetAllStoresQueryHandler> _logger;
 
     public GetAllStoresQueryHandler(
-        IViewRepository<StoreViewRecord> storeRepository,
+        IContainerRepository<StoreViewRecord> storeRepository,
         IMapper mapper,
         IValidator<GetAllStoresQuery> validator,
         ILogger<GetAllStoresQueryHandler> logger)
     {
-        _viewRepository = storeRepository;
+        _containerRepository = storeRepository;
         _mapper = mapper;
         _validator = validator;
         _logger = logger;
@@ -42,7 +42,7 @@ public class GetAllStoresQueryHandler : IRequestHandler<GetAllStoresQuery, Resul
 
         try
         {
-            var records = await _viewRepository.GetAllAsync();
+            var records = await _containerRepository.GetAllAsync();
             result = Result<List<StoreViewRecord>>.Success(records);
         }
         catch (Exception ex)

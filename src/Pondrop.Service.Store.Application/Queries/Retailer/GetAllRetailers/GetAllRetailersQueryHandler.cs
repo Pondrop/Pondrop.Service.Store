@@ -10,13 +10,13 @@ namespace Pondrop.Service.Store.Application.Queries;
 
 public class GetAllRetailersQueryHandler : IRequestHandler<GetAllRetailersQuery, Result<List<RetailerRecord>>>
 {
-    private readonly IMaterializedViewRepository<RetailerEntity> _viewRepository;
+    private readonly ICheckpointRepository<RetailerEntity> _viewRepository;
     private readonly IMapper _mapper;
     private readonly IValidator<GetAllRetailersQuery> _validator;    
     private readonly ILogger<GetAllRetailersQueryHandler> _logger;
 
     public GetAllRetailersQueryHandler(
-        IMaterializedViewRepository<RetailerEntity> viewRepository,
+        ICheckpointRepository<RetailerEntity> viewRepository,
         IMapper mapper,
         IValidator<GetAllRetailersQuery> validator,
         ILogger<GetAllRetailersQueryHandler> logger)

@@ -10,13 +10,13 @@ namespace Pondrop.Service.Store.Application.Queries;
 
 public class GetStoreTypeByIdQueryHandler : IRequestHandler<GetStoreTypeByIdQuery, Result<StoreTypeRecord?>>
 {
-    private readonly IMaterializedViewRepository<StoreTypeEntity> _viewRepository;
+    private readonly ICheckpointRepository<StoreTypeEntity> _viewRepository;
     private readonly IMapper _mapper;
     private readonly IValidator<GetStoreTypeByIdQuery> _validator;    
     private readonly ILogger<GetStoreTypeByIdQueryHandler> _logger;
 
     public GetStoreTypeByIdQueryHandler(
-        IMaterializedViewRepository<StoreTypeEntity> viewRepository,
+        ICheckpointRepository<StoreTypeEntity> viewRepository,
         IMapper mapper,
         IValidator<GetStoreTypeByIdQuery> validator,
         ILogger<GetStoreTypeByIdQueryHandler> logger)

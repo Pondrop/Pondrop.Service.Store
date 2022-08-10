@@ -15,7 +15,7 @@ namespace Pondrop.Service.Store.Application.Commands;
 public class UpdateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, UpdateRetailerCommand, Result<RetailerRecord>>
 {
     private readonly IEventRepository _eventRepository;
-    private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
+    private readonly ICheckpointRepository<RetailerEntity> _retailerCheckpointRepository;
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
     private readonly IValidator<UpdateRetailerCommand> _validator;
@@ -24,7 +24,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, 
     public UpdateRetailerCommandHandler(
         IOptions<RetailerUpdateConfiguration> retailerUpdateConfig,
         IEventRepository eventRepository,
-        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
+        ICheckpointRepository<RetailerEntity> retailerCheckpointRepository,
         IUserService userService,
         IDaprService daprService,
         IMapper mapper,
@@ -32,7 +32,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, 
         ILogger<UpdateRetailerCommandHandler> logger) : base(eventRepository, retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
-        _retailerViewRepository = retailerViewRepository;
+        _retailerCheckpointRepository = retailerCheckpointRepository;
         _userService = userService;
         _mapper = mapper;
         _validator = validator;
@@ -54,7 +54,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, 
 
         try
         {
-            var retailerEntity = await _retailerViewRepository.GetByIdAsync(command.Id);
+            var retailerEntity = await _retailerCheckpointRepository.GetByIdAsync(command.Id);
             retailerEntity ??= await GetFromStreamAsync(command.Id);
 
             if (retailerEntity is not null)
@@ -66,7 +66,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<RetailerEntity, 
 
                 if (!success)
                 {
-                    await _retailerViewRepository.FastForwardAsync(retailerEntity);
+                    await _retailerCheckpointRepository.FastForwardAsync(retailerEntity);
                     success = await UpdateStreamAsync(retailerEntity, evtPayload, createdBy);
                 }
 

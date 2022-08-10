@@ -12,27 +12,27 @@ namespace Pondrop.Service.Store.Application.Commands;
 
 public class RebuildStoreViewCommandHandler : IRequestHandler<RebuildStoreViewCommand, Result<int>>
 {
-    private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
-    private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
-    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
-    private readonly IViewRepository<StoreViewRecord> _viewRepository;
+    private readonly ICheckpointRepository<RetailerEntity> _retailerCheckpointRepository;
+    private readonly ICheckpointRepository<StoreTypeEntity> _storeTypeCheckpointRepository;
+    private readonly ICheckpointRepository<StoreEntity> _storeCheckpointRepository;
+    private readonly IContainerRepository<StoreViewRecord> _containerRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly ILogger<UpdateStoreViewCommandHandler> _logger;
+    private readonly ILogger<RebuildStoreViewCommandHandler> _logger;
 
     public RebuildStoreViewCommandHandler(
-        IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
-        IMaterializedViewRepository<StoreTypeEntity> storeTypeViewRepository,
-        IMaterializedViewRepository<StoreEntity> storeViewRepository,
-        IViewRepository<StoreViewRecord> viewRepository,
+        ICheckpointRepository<RetailerEntity> retailerCheckpointRepository,
+        ICheckpointRepository<StoreTypeEntity> storeTypeCheckpointRepository,
+        ICheckpointRepository<StoreEntity> storeCheckpointRepository,
+        IContainerRepository<StoreViewRecord> containerRepository,
         IMapper mapper,
         IUserService userService,
-        ILogger<UpdateStoreViewCommandHandler> logger) : base()
+        ILogger<RebuildStoreViewCommandHandler> logger) : base()
     {
-        _retailerViewRepository = retailerViewRepository;
-        _storeTypeViewRepository = storeTypeViewRepository;
-        _storeViewRepository = storeViewRepository;
-        _viewRepository = viewRepository;
+        _retailerCheckpointRepository = retailerCheckpointRepository;
+        _storeTypeCheckpointRepository = storeTypeCheckpointRepository;
+        _storeCheckpointRepository = storeCheckpointRepository;
+        _containerRepository = containerRepository;
         _mapper = mapper;
         _userService = userService;
         _logger = logger;
@@ -44,9 +44,9 @@ public class RebuildStoreViewCommandHandler : IRequestHandler<RebuildStoreViewCo
 
         try
         {
-            var retailersTask = _retailerViewRepository.GetAllAsync();
-            var storeTypesTask = _storeTypeViewRepository.GetAllAsync();
-            var storesTask = _storeViewRepository.GetAllAsync();
+            var retailersTask = _retailerCheckpointRepository.GetAllAsync();
+            var storeTypesTask = _storeTypeCheckpointRepository.GetAllAsync();
+            var storesTask = _storeCheckpointRepository.GetAllAsync();
 
             await Task.WhenAll(retailersTask, storeTypesTask, storesTask);
 
@@ -65,7 +65,7 @@ public class RebuildStoreViewCommandHandler : IRequestHandler<RebuildStoreViewCo
                         StoreType = storeTypeLookup[i.StoreTypeId]
                     };
 
-                    var result = await _viewRepository.UpsertAsync(storeView);
+                    var result = await _containerRepository.UpsertAsync(storeView);
                     success = result != null;
                 }
                 catch (Exception ex)
