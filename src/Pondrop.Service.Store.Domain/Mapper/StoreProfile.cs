@@ -8,5 +8,6 @@ public class StoreProfile : Profile
     public StoreProfile()
     {
         CreateMap<StoreEntity, StoreRecord>();
+        CreateMap<StoreEntity, StoreViewRecord>();
     }
 }

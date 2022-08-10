@@ -19,7 +19,7 @@ public class RetailerController : ControllerBase
     public RetailerController(
         IMediator mediator,
         IUpdateMaterializeViewQueueService updateMaterializeViewQueue,
-        IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService, 
+        IRebuildMaterializeViewQueueService rebuildMaterializeViewQueueService,
         ILogger<RetailerController> logger)
     {
         _mediator = mediator;
@@ -27,7 +27,7 @@ public class RetailerController : ControllerBase
         _rebuildMaterializeViewQueueService = rebuildMaterializeViewQueueService;
         _logger = logger;
     }
-    
+
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -38,7 +38,7 @@ public class RetailerController : ControllerBase
             i => new OkObjectResult(i),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
-    
+
     [HttpGet]
     [Route("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -67,7 +67,7 @@ public class RetailerController : ControllerBase
             },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
-    
+
     [HttpPost]
     [Route("update")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -83,7 +83,7 @@ public class RetailerController : ControllerBase
             },
             (ex, msg) => new BadRequestObjectResult(msg));
     }
-    
+
     [HttpPost]
     [Route("update/view")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -95,7 +95,7 @@ public class RetailerController : ControllerBase
             i => new OkObjectResult(i),
             (ex, msg) => new BadRequestObjectResult(msg));
     }
-    
+
     [HttpPost]
     [Route("rebuild/view")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]

@@ -24,7 +24,7 @@ public class UpdateMaterializeViewHostedService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var command = await _queue.DequeueAsync(stoppingToken);
-            
+
             if (command.Id == Guid.Empty)
                 continue;
 
@@ -37,11 +37,14 @@ public class UpdateMaterializeViewHostedService : BackgroundService
                 switch (command)
                 {
                     case UpdateRetailerMaterializedViewByIdCommand retailer:
-                        await mediator!.Send(new UpdateStoreRelationshipsCommand() { RetailerId = retailer.Id}, stoppingToken);
+                        await mediator!.Send(new UpdateStoreViewCommand() { RetailerId = retailer.Id }, stoppingToken);
                         break;
                     case UpdateStoreTypeMaterializedViewByIdCommand storeType:
-                        await mediator!.Send(new UpdateStoreRelationshipsCommand() { StoreTypeId = storeType.Id}, stoppingToken);
-                        break;;
+                        await mediator!.Send(new UpdateStoreViewCommand() { StoreTypeId = storeType.Id }, stoppingToken);
+                        break;
+                    case UpdateStoreMaterializedViewByIdCommand store:
+                        await mediator!.Send(new UpdateStoreViewCommand() { StoreId = store.Id }, stoppingToken);
+                        break;
                 }
             }
             catch (Exception ex)

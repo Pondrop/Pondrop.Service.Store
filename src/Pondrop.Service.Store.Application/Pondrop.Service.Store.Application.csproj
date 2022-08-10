@@ -19,4 +19,10 @@
     <ProjectReference Include="..\Pondrop.Service.Store.Domain\Pondrop.Service.Store.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Commands\StoreView\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Commands\StoreView\" />
+  </ItemGroup>
 </Project>

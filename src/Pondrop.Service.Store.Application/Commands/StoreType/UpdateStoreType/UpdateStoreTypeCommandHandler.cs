@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
+using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Events.StoreType;
 using Pondrop.Service.Store.Domain.Models;
 
@@ -17,7 +18,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreType
     private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
-    private readonly IValidator<UpdateStoreTypeCommand> _validator;    
+    private readonly IValidator<UpdateStoreTypeCommand> _validator;
     private readonly ILogger<UpdateStoreTypeCommandHandler> _logger;
 
     public UpdateStoreTypeCommandHandler(
@@ -54,16 +55,24 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreType
         try
         {
             var storeTypeEntity = await _storeTypeViewRepository.GetByIdAsync(command.Id);
+            storeTypeEntity ??= await GetFromStreamAsync(command.Id);
 
             if (storeTypeEntity is not null)
             {
-                storeTypeEntity.Apply(new UpdateStoreType(command.Name), _userService.CurrentUserName());
-                
-                var success = await _eventRepository.AppendEventsAsync(storeTypeEntity.StreamId, storeTypeEntity.AtSequence - 1, storeTypeEntity.GetEvents(storeTypeEntity.AtSequence));
+                var evtPayload = new UpdateStoreType(command.Name);
+                var createdBy = _userService.CurrentUserName();
+
+                var success = await UpdateStreamAsync(storeTypeEntity, evtPayload, createdBy);
+
+                if (!success)
+                {
+                    await _storeTypeViewRepository.FastForwardAsync(storeTypeEntity);
+                    success = await UpdateStreamAsync(storeTypeEntity, evtPayload, createdBy);
+                }
 
                 await Task.WhenAll(
                     InvokeDaprMethods(storeTypeEntity.Id, storeTypeEntity.GetEvents(storeTypeEntity.AtSequence)));
-                
+
                 result = success
                     ? Result<StoreTypeRecord>.Success(_mapper.Map<StoreTypeRecord>(storeTypeEntity))
                     : Result<StoreTypeRecord>.Error(FailedToMessage(command));
@@ -81,7 +90,29 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreType
 
         return result;
     }
-    
+
+    private async Task<StoreTypeEntity?> GetFromStreamAsync(Guid id)
+    {
+        var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<StoreTypeEntity>(id));
+        if (stream.Events.Any())
+            return new StoreTypeEntity(stream.Events);
+
+        return null;
+    }
+
+    private async Task<bool> UpdateStreamAsync(StoreTypeEntity entity, IEventPayload evtPayload, string createdBy)
+    {
+        var appliedEntity = entity with { };
+        appliedEntity.Apply(evtPayload, createdBy);
+
+        var success = await _eventRepository.AppendEventsAsync(appliedEntity.StreamId, appliedEntity.AtSequence - 1, appliedEntity.GetEvents(appliedEntity.AtSequence));
+
+        if (success)
+            entity.Apply(evtPayload, createdBy);
+
+        return success;
+    }
+
     private static string FailedToMessage(UpdateStoreTypeCommand command) =>
         $"Failed to update store type '{JsonConvert.SerializeObject(command)}'";
 }

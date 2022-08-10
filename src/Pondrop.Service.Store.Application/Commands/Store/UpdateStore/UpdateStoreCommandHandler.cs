@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
+using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Events.Store;
 using Pondrop.Service.Store.Domain.Models;
 
@@ -19,7 +20,7 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
     private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<UpdateStoreCommand> _validator;    
+    private readonly IValidator<UpdateStoreCommand> _validator;
     private readonly ILogger<UpdateStoreCommandHandler> _logger;
 
     public UpdateStoreCommandHandler(
@@ -74,18 +75,28 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
                 return Result<StoreRecord>.Error($"Could not find store type with id '{command.StoreTypeId}'");
 
             var storeEntity = await _storeViewRepository.GetByIdAsync(command.Id);
+            storeEntity ??= await GetFromStreamAsync(command.Id);
+
             if (storeEntity is not null)
             {
-                storeEntity.Apply(new UpdateStore(
+                var evtPayload = new UpdateStore(
                     command.Name,
                     command.Status,
-                    retailerTask.Result is not null ? _mapper.Map<RetailerRecord>(retailerTask.Result) : null,
-                    storeTypeTask.Result is not null ? _mapper.Map<StoreTypeRecord>(storeTypeTask.Result) : null), _userService.CurrentUserName());
-                var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
+                    retailerTask.Result is not null ? retailerTask.Result.Id : null,
+                    storeTypeTask.Result is not null ? storeTypeTask.Result.Id : null);
+                var createdBy = _userService.CurrentUserName();
+
+                var success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
+
+                if (!success)
+                {
+                    await _storeViewRepository.FastForwardAsync(storeEntity);
+                    success = await UpdateStreamAsync(storeEntity, evtPayload, createdBy);
+                }
 
                 await Task.WhenAll(
                     InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
-            
+
                 result = success
                     ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
                     : Result<StoreRecord>.Error(FailedToCreateMessage(command));
@@ -102,6 +113,28 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
         }
 
         return result;
+    }
+
+    private async Task<StoreEntity?> GetFromStreamAsync(Guid id)
+    {
+        var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<StoreEntity>(id));
+        if (stream.Events.Any())
+            return new StoreEntity(stream.Events);
+
+        return null;
+    }
+
+    private async Task<bool> UpdateStreamAsync(StoreEntity entity, IEventPayload evtPayload, string createdBy)
+    {
+        var appliedEntity = entity with { };
+        appliedEntity.Apply(evtPayload, createdBy);
+
+        var success = await _eventRepository.AppendEventsAsync(appliedEntity.StreamId, appliedEntity.AtSequence - 1, appliedEntity.GetEvents(appliedEntity.AtSequence));
+
+        if (success)
+            entity.Apply(evtPayload, createdBy);
+
+        return success;
     }
 
     private static string FailedToCreateMessage(UpdateStoreCommand command) =>

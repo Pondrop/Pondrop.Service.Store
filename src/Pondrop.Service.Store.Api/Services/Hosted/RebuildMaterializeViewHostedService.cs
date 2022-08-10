@@ -1,4 +1,5 @@
 using MediatR;
+using Pondrop.Service.Store.Application.Commands;
 
 namespace Pondrop.Service.Store.Api.Services;
 
@@ -28,6 +29,13 @@ public class RebuildMaterializeViewHostedService : BackgroundService
             {
                 var mediator = _serviceProvider.GetService<IMediator>();
                 await mediator!.Send(command, stoppingToken);
+
+                switch (command)
+                {
+                    case RebuildStoreMaterializedViewCommand store:
+                        await mediator!.Send(new RebuildStoreViewCommand(), stoppingToken);
+                        break;
+                }
             }
             catch (Exception ex)
             {

@@ -13,8 +13,8 @@ public record StoreEntity : EventEntity
         Status = string.Empty;
         ExternalReferenceId = string.Empty;
         Addresses = new List<StoreAddressRecord>();
-        Retailer = new RetailerRecord();
-        StoreType = new StoreTypeRecord();
+        RetailerId = Guid.Empty;
+        StoreTypeId = Guid.Empty;
     }
 
     public StoreEntity(IEnumerable<IEvent> events) : this()
@@ -25,9 +25,9 @@ public record StoreEntity : EventEntity
         }
     }
 
-    public StoreEntity(string name, string status, string externalReferenceId, RetailerRecord retailer, StoreTypeRecord storeType, string createdBy) : this()
+    public StoreEntity(string name, string status, string externalReferenceId, Guid retailerId, Guid storeTypeId, string createdBy) : this()
     {
-        var create = new CreateStore(Guid.NewGuid(), name, status, externalReferenceId, retailer, storeType);
+        var create = new CreateStore(Guid.NewGuid(), name, status, externalReferenceId, retailerId, storeTypeId);
         Apply(create, createdBy);
     }
 
@@ -43,11 +43,11 @@ public record StoreEntity : EventEntity
     [JsonProperty(PropertyName = "addresses")]
     public List<StoreAddressRecord> Addresses { get; private set; }
 
-    [JsonProperty(PropertyName = "retailer")]
-    public RetailerRecord Retailer { get; private set; }
+    [JsonProperty(PropertyName = "retailerId")]
+    public Guid RetailerId { get; private set; }
 
-    [JsonProperty(PropertyName = "storeType")]
-    public StoreTypeRecord StoreType { get; private set; }
+    [JsonProperty(PropertyName = "storeTypeId")]
+    public Guid StoreTypeId { get; private set; }
 
     protected sealed override void Apply(IEvent eventToApply)
     {
@@ -95,8 +95,8 @@ public record StoreEntity : EventEntity
         Name = create.Name;
         Status = create.Status;
         ExternalReferenceId = create.ExternalReferenceId;
-        Retailer = create.Retailer;
-        StoreType = create.StoreType;
+        RetailerId = create.RetailerId;
+        StoreTypeId = create.StoreTypeId;
         CreatedBy = UpdatedBy = createdBy;
         CreatedUtc = UpdatedUtc = createdUtc;
     }
@@ -105,18 +105,18 @@ public record StoreEntity : EventEntity
     {
         var oldName = Name;
         var oldStatus = Status;
-        var oldRetailerId = Retailer.Id;
-        var oldStoreTypeId = StoreType.Id;
+        var oldRetailerId = RetailerId;
+        var oldStoreTypeId = StoreTypeId;
 
         Name = update.Name ?? Name;
         Status = update.Status ?? Status;
-        Retailer = update.Retailer ?? Retailer;
-        StoreType = update.StoreType ?? StoreType;
+        RetailerId = update.RetailerId ?? RetailerId;
+        StoreTypeId = update.StoreTypeId ?? StoreTypeId;
 
         if (oldName != Name ||
             oldStatus != Status ||
-            oldRetailerId != Retailer.Id ||
-            oldStoreTypeId != StoreType.Id)
+            oldRetailerId != StoreTypeId ||
+            oldStoreTypeId != StoreTypeId)
         {
             UpdatedBy = createdBy;
             UpdatedUtc = createdUtc;

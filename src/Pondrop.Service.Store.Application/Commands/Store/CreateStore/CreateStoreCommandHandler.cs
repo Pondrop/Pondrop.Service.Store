@@ -18,7 +18,7 @@ public class CreateStoreCommandHandler : DirtyCommandHandler<CreateStoreCommand,
     private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
-    private readonly IValidator<CreateStoreCommand> _validator;    
+    private readonly IValidator<CreateStoreCommand> _validator;
     private readonly ILogger<CreateStoreCommandHandler> _logger;
 
     public CreateStoreCommandHandler(
@@ -66,10 +66,13 @@ public class CreateStoreCommandHandler : DirtyCommandHandler<CreateStoreCommand,
             if (storeTypeTask.Result is null)
                 return Result<StoreRecord>.Error($"Could not find store type with id '{command.StoreTypeId}'");
 
-            var retailerRecord = _mapper.Map<RetailerRecord>(retailerTask.Result);
-            var storeTypeRecord = _mapper.Map<StoreTypeRecord>(storeTypeTask.Result);
-            
-            var storeEntity = new StoreEntity(command.Name, command.Status, command.ExternalReferenceId, retailerRecord, storeTypeRecord, _userService.CurrentUserName());
+            var storeEntity = new StoreEntity(
+                command.Name,
+                command.Status,
+                command.ExternalReferenceId,
+                retailerTask.Result.Id,
+                storeTypeTask.Result.Id,
+                _userService.CurrentUserName());
             storeEntity.Apply(new AddStoreAddress(
                 Guid.NewGuid(),
                 storeEntity.Id,
@@ -86,7 +89,7 @@ public class CreateStoreCommandHandler : DirtyCommandHandler<CreateStoreCommand,
 
             await Task.WhenAll(
                 InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents()));
-            
+
             result = success
                 ? Result<StoreRecord>.Success(_mapper.Map<StoreRecord>(storeEntity))
                 : Result<StoreRecord>.Error(FailedToCreateMessage(command));

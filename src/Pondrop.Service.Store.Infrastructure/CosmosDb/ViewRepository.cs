@@ -12,14 +12,11 @@ using System.Text;
 
 namespace Pondrop.Service.Store.Infrastructure.CosmosDb;
 
-public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> where T : EventEntity, new()
+public class ViewRepository<T> : IViewRepository<T>
 {
-    private const string SpUpsertMaterializedView = "spUpsertMaterializedView";
-
     private readonly string _containerName;
 
-    private readonly IEventRepository _eventRepository;
-    private readonly ILogger<MaterializedViewRepository<T>> _logger;
+    private readonly ILogger<ViewRepository<T>> _logger;
     private readonly CosmosConfiguration _config;
 
     private readonly CosmosClient _cosmosClient;
@@ -28,19 +25,18 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
     private Database? _database;
     private Container? _container;
 
-    public MaterializedViewRepository(
-        IEventRepository eventRepository,
+    public ViewRepository(
         IOptions<CosmosConfiguration> config,
-        ILogger<MaterializedViewRepository<T>> logger)
+        ILogger<ViewRepository<T>> logger)
     {
         var nameChars = typeof(T).Name
+            .Replace("View", string.Empty)
             .Replace("Entity", string.Empty)
             .Replace("Record", string.Empty)
             .ToCharArray();
         nameChars[0] = char.ToLower(nameChars[0]);
         _containerName = new string(nameChars);
 
-        _eventRepository = eventRepository;
         _logger = logger;
         _config = config.Value;
 
@@ -66,18 +62,12 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         {
             if (_container is null)
             {
-                _database = await _cosmosClient.CreateDatabaseIfNotExistsAsync($"{_config.DatabaseName}_materialized");
+                _database = await _cosmosClient.CreateDatabaseIfNotExistsAsync($"{_config.DatabaseName}_view");
             }
 
             if (_database is not null && _container is null)
             {
                 _container = await _database.CreateContainerIfNotExistsAsync(_containerName, "/id");
-            }
-
-            if (_container is not null)
-            {
-                var spDirInfo = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"CosmosDb/StoredProcedures/Materialized"));
-                await _container.EnsureStoreProcedures(spDirInfo);
             }
         }
         catch (Exception ex)
@@ -90,47 +80,6 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         }
 
         return _container is not null;
-    }
-
-    public async Task<int> RebuildAsync()
-    {
-        if (await IsConnectedAsync())
-        {
-            var streamType = EventEntity.GetStreamTypeName<T>();
-
-            var allStreams = await _eventRepository.LoadStreamsByTypeAsync(streamType);
-
-            foreach (var i in allStreams)
-            {
-                var entity = new T();
-                entity.Apply(i.Value.Events);
-                await _container!.UpsertItemAsync(entity);
-            }
-
-            return allStreams.Count;
-        }
-
-        return -1;
-    }
-
-    public async Task<T?> UpsertAsync(long expectedVersion, T entity)
-    {
-        if (await IsConnectedAsync())
-        {
-            var idString = entity.Id.ToString();
-
-            var parameters = new dynamic[]
-            {
-                idString,
-                expectedVersion,
-                JsonConvert.SerializeObject(entity)
-            };
-
-            return await _container!.Scripts.ExecuteStoredProcedureAsync<T?>(SpUpsertMaterializedView,
-                new PartitionKey(idString), parameters);
-        }
-
-        return default;
     }
 
     public async Task<T?> UpsertAsync(T entity)
@@ -177,13 +126,6 @@ public class MaterializedViewRepository<T> : IMaterializedViewRepository<T> wher
         }
 
         return default;
-    }
-
-    public async Task FastForwardAsync(T item)
-    {
-        var eventStream = await _eventRepository.LoadStreamAsync(item.StreamId, item.AtSequence + 1);
-        if (eventStream.Events.Any())
-            item.Apply(eventStream.Events);
     }
 
     public async Task<List<T>> QueryAsync(string sqlQueryText, Dictionary<string, string>? parameters = null)

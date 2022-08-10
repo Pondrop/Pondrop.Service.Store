@@ -20,7 +20,7 @@ JsonConvert.DefaultSettings = () => new JsonSerializerSettings()
 {
     ContractResolver = new DefaultContractResolver()
     {
-      NamingStrategy  = new CamelCaseNamingStrategy()
+        NamingStrategy = new CamelCaseNamingStrategy()
     },
     DateTimeZoneHandling = DateTimeZoneHandling.Utc
 };
@@ -52,7 +52,7 @@ services.AddApiVersioning(options =>
 services.AddLogging(config =>
 {
     config.AddDebug();
-    config.AddConsole();    
+    config.AddConsole();
 });
 services
     .AddControllers()
@@ -89,6 +89,7 @@ services.AddSingleton<IEventRepository, EventRepository>();
 services.AddSingleton<IMaterializedViewRepository<RetailerEntity>, MaterializedViewRepository<RetailerEntity>>();
 services.AddSingleton<IMaterializedViewRepository<StoreTypeEntity>, MaterializedViewRepository<StoreTypeEntity>>();
 services.AddSingleton<IMaterializedViewRepository<StoreEntity>, MaterializedViewRepository<StoreEntity>>();
+services.AddSingleton<IViewRepository<StoreViewRecord>, ViewRepository<StoreViewRecord>>();
 services.AddSingleton<IDaprService, DaprService>();
 
 var app = builder.Build();

@@ -48,16 +48,24 @@ public class UpdateMaterializedViewByIdCommandCommandHandler<TCommand, TEntity, 
         try
         {
             var entity = await _typeViewRepository.GetByIdAsync(command.Id);
-            var expectedVersion = entity?.AtSequence ?? -1;
-            var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<TEntity>(command.Id), expectedVersion + 1);
 
-            if (stream.Events.Any())
+            if (entity is not null)
             {
-                entity ??= new TEntity();
-                entity.Apply(stream.Events);
-                
-                entity = await _typeViewRepository.UpsertAsync(Math.Max(0, expectedVersion), entity);
+                await _typeViewRepository.FastForwardAsync(entity);
+            }
+            else
+            {
+                var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<TEntity>(command.Id), 0);
+                if (stream.Events.Any())
+                {
+                    entity = new TEntity();
+                    entity.Apply(stream.Events);
+                }
+            }
 
+            if (entity is not null)
+            {
+                entity = await _typeViewRepository.UpsertAsync(entity);
                 result = entity is not null
                     ? Result<TRecord>.Success(_mapper.Map<TRecord>(entity))
                     : Result<TRecord>.Error(FailedToMessage(command));
@@ -79,7 +87,7 @@ public class UpdateMaterializedViewByIdCommandCommandHandler<TCommand, TEntity, 
 
         return result;
     }
-    
+
     private static string FailedToMessage(TCommand byIdCommand) =>
         $"Failed to update materialized {typeof(TEntity).Name} '{byIdCommand.Id}'";
 }

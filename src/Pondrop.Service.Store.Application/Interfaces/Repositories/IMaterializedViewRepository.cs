@@ -3,16 +3,10 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Interfaces;
 
-public interface IMaterializedViewRepository<T> where T : EventEntity
+public interface IMaterializedViewRepository<T> : IViewRepository<T> where T : EventEntity
 {
-    Task<bool> IsConnectedAsync();
-    
     Task<int> RebuildAsync();
     Task<T?> UpsertAsync(long expectedVersion, T item);
-    Task<T?> ReplaceAsync(T item);
-    
-    Task<List<T>> GetAllAsync();
-    Task<T?> GetByIdAsync(Guid id);
-    
-    Task<List<T>> QueryAsync(string sqlQueryText, Dictionary<string, string>? parameters = null);
+
+    Task FastForwardAsync(T item);
 }

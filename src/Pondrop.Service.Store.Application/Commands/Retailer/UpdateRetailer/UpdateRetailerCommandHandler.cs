@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
+using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Events.Retailer;
 using Pondrop.Service.Store.Domain.Models;
 
@@ -17,7 +18,7 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
-    private readonly IValidator<UpdateRetailerCommand> _validator;    
+    private readonly IValidator<UpdateRetailerCommand> _validator;
     private readonly ILogger<UpdateRetailerCommandHandler> _logger;
 
     public UpdateRetailerCommandHandler(
@@ -54,16 +55,24 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
         try
         {
             var retailerEntity = await _retailerViewRepository.GetByIdAsync(command.Id);
+            retailerEntity ??= await GetFromStreamAsync(command.Id);
 
             if (retailerEntity is not null)
             {
-                retailerEntity.Apply(new UpdateRetailer(command.Name), _userService.CurrentUserName());
-                
-                var success = await _eventRepository.AppendEventsAsync(retailerEntity.StreamId, retailerEntity.AtSequence - 1, retailerEntity.GetEvents(retailerEntity.AtSequence));
+                var evtPayload = new UpdateRetailer(command.Name);
+                var createdBy = _userService.CurrentUserName();
+
+                var success = await UpdateStreamAsync(retailerEntity, evtPayload, createdBy);
+
+                if (!success)
+                {
+                    await _retailerViewRepository.FastForwardAsync(retailerEntity);
+                    success = await UpdateStreamAsync(retailerEntity, evtPayload, createdBy);
+                }
 
                 await Task.WhenAll(
                     InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
-                
+
                 result = success
                     ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))
                     : Result<RetailerRecord>.Error(FailedToMessage(command));
@@ -81,7 +90,29 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
 
         return result;
     }
-    
+
+    private async Task<RetailerEntity?> GetFromStreamAsync(Guid id)
+    {
+        var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<RetailerEntity>(id));
+        if (stream.Events.Any())
+            return new RetailerEntity(stream.Events);
+
+        return null;
+    }
+
+    private async Task<bool> UpdateStreamAsync(RetailerEntity entity, IEventPayload evtPayload, string createdBy)
+    {
+        var appliedEntity = entity with { };
+        appliedEntity.Apply(evtPayload, createdBy);
+
+        var success = await _eventRepository.AppendEventsAsync(appliedEntity.StreamId, appliedEntity.AtSequence - 1, appliedEntity.GetEvents(appliedEntity.AtSequence));
+
+        if (success)
+            entity.Apply(evtPayload, createdBy);
+
+        return success;
+    }
+
     private static string FailedToMessage(UpdateRetailerCommand command) =>
         $"Failed to update retailer '{JsonConvert.SerializeObject(command)}'";
 }

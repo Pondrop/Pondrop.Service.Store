@@ -8,49 +8,47 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Queries;
 
-public class GetAllStoresQueryHandler : IRequestHandler<GetAllStoresQuery, Result<List<StoreRecord>>>
+public class GetAllStoresQueryHandler : IRequestHandler<GetAllStoresQuery, Result<List<StoreViewRecord>>>
 {
-    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
+    private readonly IViewRepository<StoreViewRecord> _viewRepository;
     private readonly IMapper _mapper;
-    private readonly IValidator<GetAllStoresQuery> _validator;    
+    private readonly IValidator<GetAllStoresQuery> _validator;
     private readonly ILogger<GetAllStoresQueryHandler> _logger;
 
     public GetAllStoresQueryHandler(
-        IMaterializedViewRepository<StoreEntity> storeViewRepository,
+        IViewRepository<StoreViewRecord> storeRepository,
         IMapper mapper,
         IValidator<GetAllStoresQuery> validator,
         ILogger<GetAllStoresQueryHandler> logger)
     {
-        _storeViewRepository = storeViewRepository;
+        _viewRepository = storeRepository;
         _mapper = mapper;
         _validator = validator;
         _logger = logger;
     }
 
-    public async Task<Result<List<StoreRecord>>> Handle(GetAllStoresQuery request, CancellationToken cancellationToken)
+    public async Task<Result<List<StoreViewRecord>>> Handle(GetAllStoresQuery request, CancellationToken cancellationToken)
     {
         var validation = _validator.Validate(request);
 
         if (!validation.IsValid)
         {
-            var errorMessage = $"Get all shopping lists failed {validation}";
+            var errorMessage = $"Get all stores failed {validation}";
             _logger.LogError(errorMessage);
-            return Result<List<StoreRecord>>.Error(errorMessage);
+            return Result<List<StoreViewRecord>>.Error(errorMessage);
         }
 
-        var result = default(Result<List<StoreRecord>>);
+        var result = default(Result<List<StoreViewRecord>>);
 
         try
         {
-            var storeEntities = await _storeViewRepository.GetAllAsync();
-            var storeRecords = storeEntities.Select(i => _mapper.Map<StoreRecord>(i)).ToList();
-            
-            result = Result<List<StoreRecord>>.Success(storeRecords);
+            var records = await _viewRepository.GetAllAsync();
+            result = Result<List<StoreViewRecord>>.Success(records);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
-            result = Result<List<StoreRecord>>.Error(ex);
+            result = Result<List<StoreViewRecord>>.Error(ex);
         }
 
         return result;
