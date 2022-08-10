@@ -12,7 +12,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreTypeCommand, Result<StoreTypeRecord>>
+public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity, UpdateStoreTypeCommand, Result<StoreTypeRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<StoreTypeEntity> _storeTypeViewRepository;
@@ -29,7 +29,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreType
         IDaprService daprService,
         IMapper mapper,
         IValidator<UpdateStoreTypeCommand> validator,
-        ILogger<UpdateStoreTypeCommandHandler> logger) : base(storeTypeUpdateConfig.Value, daprService, logger)
+        ILogger<UpdateStoreTypeCommandHandler> logger) : base(eventRepository, storeTypeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _storeTypeViewRepository = storeTypeViewRepository;
@@ -89,28 +89,6 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<UpdateStoreType
         }
 
         return result;
-    }
-
-    private async Task<StoreTypeEntity?> GetFromStreamAsync(Guid id)
-    {
-        var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<StoreTypeEntity>(id));
-        if (stream.Events.Any())
-            return new StoreTypeEntity(stream.Events);
-
-        return null;
-    }
-
-    private async Task<bool> UpdateStreamAsync(StoreTypeEntity entity, IEventPayload evtPayload, string createdBy)
-    {
-        var appliedEntity = entity with { };
-        appliedEntity.Apply(evtPayload, createdBy);
-
-        var success = await _eventRepository.AppendEventsAsync(appliedEntity.StreamId, appliedEntity.AtSequence - 1, appliedEntity.GetEvents(appliedEntity.AtSequence));
-
-        if (success)
-            entity.Apply(evtPayload, createdBy);
-
-        return success;
     }
 
     private static string FailedToMessage(UpdateStoreTypeCommand command) =>

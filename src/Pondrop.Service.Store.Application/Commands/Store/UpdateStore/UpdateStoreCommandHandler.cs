@@ -12,7 +12,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand, Result<StoreRecord>>
+public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, UpdateStoreCommand, Result<StoreRecord>>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
@@ -33,7 +33,7 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
         IUserService userService,
         IMapper mapper,
         IValidator<UpdateStoreCommand> validator,
-        ILogger<UpdateStoreCommandHandler> logger) : base(storeUpdateConfig.Value, daprService, logger)
+        ILogger<UpdateStoreCommandHandler> logger) : base(eventRepository, storeUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
         _retailerViewRepository = retailerViewRepository;
@@ -113,28 +113,6 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
         }
 
         return result;
-    }
-
-    private async Task<StoreEntity?> GetFromStreamAsync(Guid id)
-    {
-        var stream = await _eventRepository.LoadStreamAsync(EventEntity.GetStreamId<StoreEntity>(id));
-        if (stream.Events.Any())
-            return new StoreEntity(stream.Events);
-
-        return null;
-    }
-
-    private async Task<bool> UpdateStreamAsync(StoreEntity entity, IEventPayload evtPayload, string createdBy)
-    {
-        var appliedEntity = entity with { };
-        appliedEntity.Apply(evtPayload, createdBy);
-
-        var success = await _eventRepository.AppendEventsAsync(appliedEntity.StreamId, appliedEntity.AtSequence - 1, appliedEntity.GetEvents(appliedEntity.AtSequence));
-
-        if (success)
-            entity.Apply(evtPayload, createdBy);
-
-        return success;
     }
 
     private static string FailedToCreateMessage(UpdateStoreCommand command) =>
