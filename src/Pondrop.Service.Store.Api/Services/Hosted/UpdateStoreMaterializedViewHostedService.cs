@@ -5,25 +5,23 @@ namespace Pondrop.Service.Store.Api.Worker;
 public class WorkerServiceBus : IHostedService, IDisposable
 {
     private readonly ILogger<WorkerServiceBus> _logger;
-    private readonly IServiceBusListener _serviceBusTopicSubscription;
+    private readonly IServiceBusListener _serviceBusListener;
 
     public WorkerServiceBus(IServiceBusListener serviceBusTopicSubscription,
         ILogger<WorkerServiceBus> logger)
     {
-        _serviceBusTopicSubscription = serviceBusTopicSubscription;
+        _serviceBusListener = serviceBusTopicSubscription;
         _logger = logger;
     }
 
     public async Task StartAsync(CancellationToken stoppingToken)
     {
-        _logger.LogDebug("Starting the service bus queue consumer and the subscription");
-        await _serviceBusTopicSubscription.PrepareFiltersAndHandleMessages().ConfigureAwait(false);
+        await _serviceBusListener.HandleMessages().ConfigureAwait(false);
     }
 
     public async Task StopAsync(CancellationToken stoppingToken)
     {
-        _logger.LogDebug("Stopping the service bus queue consumer and the subscription");
-        await _serviceBusTopicSubscription.CloseSubscriptionAsync().ConfigureAwait(false);
+        await _serviceBusListener.CloseListener().ConfigureAwait(false);
     }
 
     public void Dispose()
@@ -36,7 +34,7 @@ public class WorkerServiceBus : IHostedService, IDisposable
     {
         if (disposing)
         {
-            await _serviceBusTopicSubscription.DisposeAsync().ConfigureAwait(false);
+            await _serviceBusListener.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

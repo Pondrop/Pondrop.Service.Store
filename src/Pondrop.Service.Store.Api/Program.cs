@@ -9,6 +9,7 @@ using Pondrop.Service.Store.Api.Middleware;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Api.Services.Interface;
 using Pondrop.Service.Store.Api.Worker;
+using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.ServiceBus;
 using Pondrop.Service.Store.Application.Interfaces.Services;
@@ -24,7 +25,7 @@ JsonConvert.DefaultSettings = () => new JsonSerializerSettings()
 {
     ContractResolver = new DefaultContractResolver()
     {
-      NamingStrategy  = new CamelCaseNamingStrategy()
+        NamingStrategy = new CamelCaseNamingStrategy()
     },
     DateTimeZoneHandling = DateTimeZoneHandling.Utc
 };
@@ -56,8 +57,9 @@ services.AddApiVersioning(options =>
 services.AddLogging(config =>
 {
     config.AddDebug();
-    config.AddConsole();    
+    config.AddConsole();
 });
+
 services
     .AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -72,9 +74,9 @@ services.AddAutoMapper(
 services.AddMediatR(
     typeof(Result<>));
 services.AddFluentValidation(config =>
-    {
-        config.RegisterValidatorsFromAssemblyContaining(typeof(Result<>));
-    });
+{
+    config.RegisterValidatorsFromAssemblyContaining(typeof(Result<>));
+});
 
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
 services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
@@ -94,11 +96,13 @@ services.AddSingleton<IEventRepository, EventRepository>();
 services.AddSingleton<IMaterializedViewRepository<RetailerEntity>, MaterializedViewRepository<RetailerEntity>>();
 services.AddSingleton<IMaterializedViewRepository<StoreTypeEntity>, MaterializedViewRepository<StoreTypeEntity>>();
 services.AddSingleton<IMaterializedViewRepository<StoreEntity>, MaterializedViewRepository<StoreEntity>>();
-services.AddSingleton<IMessagingService<RetailerEntity>, MessagingService<RetailerEntity>>();
-services.AddSingleton<IMessagingService<StoreTypeEntity>, MessagingService<StoreTypeEntity>>();
+services.AddSingleton<IServiceBusMessagingService<UpdateRetailerCommand>, ServiceBusMessagingService<UpdateRetailerCommand>>();
+services.AddSingleton<IServiceBusMessagingService<UpdateStoreTypeCommand>, ServiceBusMessagingService<UpdateStoreTypeCommand>>();
+services.AddSingleton<IServiceBusMessagingService<RebuildRetailerMaterializedViewCommand>, ServiceBusMessagingService<RebuildRetailerMaterializedViewCommand>>();
+services.AddSingleton<IServiceBusMessagingService<UpdateRetailerMaterializedViewByIdCommand>, ServiceBusMessagingService<UpdateRetailerMaterializedViewByIdCommand>>();
 services.AddSingleton<IDaprService, DaprService>();
+services.AddSingleton<IServiceBusListener, ServiceBusListener>();
 
-services.AddSingleton<IServiceBusListener, UpdateStoreListener>();
 services.AddHostedService<WorkerServiceBus>();
 
 var app = builder.Build();

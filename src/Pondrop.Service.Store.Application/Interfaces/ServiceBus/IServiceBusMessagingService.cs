@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Pondrop.Service.Store.Application.Interfaces.ServiceBus;
-public interface IMessagingService<T> where T : new()
+public interface IServiceBusMessagingService<T> where T : new()
 {
     Task SendMessageAsync(T message);
 }

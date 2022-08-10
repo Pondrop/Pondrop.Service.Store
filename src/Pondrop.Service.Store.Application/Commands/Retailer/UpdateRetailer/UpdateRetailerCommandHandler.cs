@@ -16,19 +16,21 @@ namespace Pondrop.Service.Store.Application.Commands;
 public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCommand, Result<RetailerRecord>>
 {
     private readonly IEventRepository _eventRepository;
+    private readonly IServiceBusMessagingService<UpdateRetailerCommand> _retailerMessagingService;
     private readonly IMaterializedViewRepository<RetailerEntity> _retailerViewRepository;
+    private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
     private readonly IMediator _mediator;
     private readonly IUserService _userService;
     private readonly IMapper _mapper;
     private readonly IValidator<UpdateRetailerCommand> _validator;
     private readonly ILogger<UpdateRetailerCommandHandler> _logger;
-    private readonly IMessagingService<RetailerEntity> _retailerMessagingService;
 
     public UpdateRetailerCommandHandler(
         IOptions<RetailerUpdateConfiguration> retailerUpdateConfig,
         IEventRepository eventRepository,
-        IMessagingService<RetailerEntity> retailerMessagingService,
         IMaterializedViewRepository<RetailerEntity> retailerViewRepository,
+        IMaterializedViewRepository<StoreEntity> storeViewRepository,
+        IServiceBusMessagingService<UpdateRetailerCommand> retailerMessagingService,
         IMediator mediator,
         IUserService userService,
         IDaprService daprService,
@@ -37,13 +39,14 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
         ILogger<UpdateRetailerCommandHandler> logger) : base(retailerUpdateConfig.Value, daprService, logger)
     {
         _eventRepository = eventRepository;
+        _retailerMessagingService = retailerMessagingService;
         _retailerViewRepository = retailerViewRepository;
+        _storeViewRepository = storeViewRepository;
         _mediator = mediator;
         _userService = userService;
         _mapper = mapper;
         _validator = validator;
         _logger = logger;
-        _retailerMessagingService = retailerMessagingService;
     }
 
     public override async Task<Result<RetailerRecord>> Handle(UpdateRetailerCommand command, CancellationToken cancellationToken)
@@ -71,10 +74,6 @@ public class UpdateRetailerCommandHandler : DirtyCommandHandler<UpdateRetailerCo
 
                 await Task.WhenAll(
                     InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
-                //await UpdateStoresAsync(retailerEntity.Id);
-                
-
-                await _retailerMessagingService.SendMessageAsync(command);
 
                 result = success
                     ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))

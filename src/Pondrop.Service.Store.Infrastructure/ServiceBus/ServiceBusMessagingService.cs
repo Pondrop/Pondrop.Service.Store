@@ -7,21 +7,19 @@ using Pondrop.Service.Store.Application.Interfaces.ServiceBus;
 using Pondrop.Service.Store.Application.Models;
 
 namespace Pondrop.Service.Store.Infrastructure.ServiceBus;
-public class MessagingService<T> : IMessagingService<T> where T : new()
+public class ServiceBusMessagingService<T> : IServiceBusMessagingService<T> where T : new()
 {
     private readonly IMapper _mapper;
-    private readonly ILogger<MessagingService<T>> _logger;
+    private readonly ILogger<ServiceBusMessagingService<T>> _logger;
     private readonly ServiceBusConfiguration _config;
 
     private readonly ServiceBusClient _serviceBusClient;
     private readonly ServiceBusSender _sender;
 
-    private readonly SemaphoreSlim _connectSemaphore = new SemaphoreSlim(1, 1);
-
-    public MessagingService(
+    public ServiceBusMessagingService(
         IMapper mapper,
         IOptions<ServiceBusConfiguration> config,
-        ILogger<MessagingService<T>> logger)
+        ILogger<ServiceBusMessagingService<T>> logger)
     {
         _mapper = mapper;
         _logger = logger;
@@ -32,9 +30,9 @@ public class MessagingService<T> : IMessagingService<T> where T : new()
             throw new ArgumentException("Service Bus 'QueueName' cannot be null or empty"); ;
 
         _config = config.Value;
-
         _serviceBusClient = new ServiceBusClient(_config.ConnectionString);
         _sender = _serviceBusClient.CreateSender(_config.QueueName);
+
     }
 
     public async Task SendMessageAsync(T message)
@@ -43,18 +41,12 @@ public class MessagingService<T> : IMessagingService<T> where T : new()
         {
             var jsonMessage = JsonConvert.SerializeObject(message);
             var serviceBusMessage = new ServiceBusMessage(jsonMessage);
+            serviceBusMessage.Subject = $"{typeof(T).FullName},{typeof(T).Assembly.FullName}";
             await _sender.SendMessageAsync(serviceBusMessage);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
         }
-        finally
-        {
-
-            await _sender.DisposeAsync();
-            await _serviceBusClient.DisposeAsync();
-        }
-
     }
 }

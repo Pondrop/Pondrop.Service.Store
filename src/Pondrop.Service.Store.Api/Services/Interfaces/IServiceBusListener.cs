@@ -2,9 +2,9 @@
 
 public interface IServiceBusListener
 {
-    Task PrepareFiltersAndHandleMessages();
+    Task HandleMessages();
 
-    Task CloseSubscriptionAsync();
+    Task CloseListener();
 
     ValueTask DisposeAsync();
 }

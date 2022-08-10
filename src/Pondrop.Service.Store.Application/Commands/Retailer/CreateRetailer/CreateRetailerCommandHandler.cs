@@ -55,7 +55,7 @@ public class CreateRetailerCommandHandler : DirtyCommandHandler<CreateRetailerCo
 
             await Task.WhenAll(
                 InvokeDaprMethods(retailerEntity.Id, retailerEntity.GetEvents()));
-            
+
             result = success
                 ? Result<RetailerRecord>.Success(_mapper.Map<RetailerRecord>(retailerEntity))
                 : Result<RetailerRecord>.Error(FailedToCreateMessage(command));

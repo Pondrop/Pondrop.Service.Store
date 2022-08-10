@@ -83,6 +83,8 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<UpdateStoreCommand,
                     storeTypeTask.Result is not null ? _mapper.Map<StoreTypeRecord>(storeTypeTask.Result) : null), _userService.CurrentUserName());
                 var success = await _eventRepository.AppendEventsAsync(storeEntity.StreamId, storeEntity.AtSequence - 1, storeEntity.GetEvents(storeEntity.AtSequence));
 
+                await _storeViewRepository.UpsertAsync(storeEntity.AtSequence - 1, storeEntity);
+
                 await Task.WhenAll(
                     InvokeDaprMethods(storeEntity.Id, storeEntity.GetEvents(storeEntity.AtSequence)));
             

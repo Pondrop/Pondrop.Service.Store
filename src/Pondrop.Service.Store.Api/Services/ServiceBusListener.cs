@@ -6,6 +6,7 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Pondrop.Service.Store.Api.Services.Interface;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
@@ -14,15 +15,15 @@ using Pondrop.Service.Store.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pondrop.Service.Store.Api.Services;
-public class UpdateStoreListener : IServiceBusListener
+public class ServiceBusListener : IServiceBusListener
 {
-    //private readonly IProcessData _processData;
-
     private readonly IMapper _mapper;
-    private readonly ILogger<UpdateStoreListener> _logger;
+    private readonly ILogger<ServiceBusListener> _logger;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IMediator _mediator;
     private readonly ServiceBusConfiguration _config;
     private readonly IMaterializedViewRepository<StoreEntity> _storeViewRepository;
@@ -31,16 +32,17 @@ public class UpdateStoreListener : IServiceBusListener
 
     private ServiceBusProcessor _processor;
 
-    public UpdateStoreListener(
+    public ServiceBusListener(
         IMapper mapper,
         IOptions<ServiceBusConfiguration> config,
         IMaterializedViewRepository<StoreEntity> storeViewRepository,
         IMediator mediator,
-        ILogger<UpdateStoreListener> logger)
+        IServiceProvider serviceProvider,
+        ILogger<ServiceBusListener> logger)
     {
         _mapper = mapper;
         _logger = logger;
-        _mediator = mediator;
+        _serviceProvider = serviceProvider;
         _storeViewRepository = storeViewRepository;
 
         if (string.IsNullOrEmpty(config.Value?.ConnectionString))
@@ -54,7 +56,7 @@ public class UpdateStoreListener : IServiceBusListener
     }
 
 
-    public async Task PrepareFiltersAndHandleMessages()
+    public async Task HandleMessages()
     {
         ServiceBusProcessorOptions _serviceBusProcessorOptions = new ServiceBusProcessorOptions
         {
@@ -74,11 +76,19 @@ public class UpdateStoreListener : IServiceBusListener
     {
         try
         {
-            var payload = args.Message.Body.ToObjectFromJson<RetailerEntity>();
-        }
-        catch (Exception ex)
-        {
-            var payload = args.Message.Body.ToObjectFromJson<StoreTypeEntity>();
+            var payload = Encoding.UTF8.GetString(args.Message.Body);
+
+            var commandType = Type.GetType(args.Message.Subject);
+            //if (commandType == typeof()
+            //{
+            //    var command = JsonConvert.DeserializeObject<UpdateRetailerCommand>(payload);
+            //    await UpdateStoresByRetailerAsync(command);
+            //}
+            //else if (args.Message.Subject == "UpdateStoreTypeCommand")
+            //{
+            //    var command = JsonConvert.DeserializeObject<UpdateStoreTypeCommand>(payload);
+            //    await UpdateStoresByStoreTypeAsync(command);
+            //}
         }
         finally
         {
@@ -109,24 +119,64 @@ public class UpdateStoreListener : IServiceBusListener
         }
     }
 
-    public async Task CloseSubscriptionAsync()
+    public async Task CloseListener()
     {
         await _processor.CloseAsync().ConfigureAwait(false);
     }
 
-    private async Task UpdateStoresAsync(Guid updatedRetailerId)
+    private async Task UpdateStoresByRetailerAsync(UpdateRetailerCommand command)
     {
         const string retailerIdKey = "@retailerId";
         var affectedStores = await _storeViewRepository.QueryAsync(
             $"SELECT * FROM c WHERE c.retailer.id = {retailerIdKey}",
-            new Dictionary<string, string>() { [retailerIdKey] = updatedRetailerId.ToString() });
-
-        var updateTasks = affectedStores.Select(i =>
+            new Dictionary<string, string>() { [retailerIdKey] = command.Id.ToString() });
+        try
         {
-            var command = new UpdateStoreCommand() { Id = i.Id, RetailerId = updatedRetailerId };
-            return _mediator.Send(command);
-        }).ToList();
+            using var scoped = _serviceProvider.CreateScope();
+            var mediator = scoped.ServiceProvider.GetService<IMediator>();
 
-        await Task.WhenAll(updateTasks);
+            var updateTasks = affectedStores.Select(i =>
+            {
+                var updateStoreCommand = new UpdateStoreCommand() { Id = i.Id, RetailerId = command.Id };
+
+                return mediator.Send(updateStoreCommand);
+            }).ToList();
+
+
+            await Task.WhenAll(updateTasks);
+        }
+
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to run rebuild materialize view {command.GetType().Name}");
+        }
+    }
+
+    private async Task UpdateStoresByStoreTypeAsync(UpdateStoreTypeCommand command)
+    {
+        const string storeTypeIdKey = "@storeTypeId";
+        var affectedStores = await _storeViewRepository.QueryAsync(
+            $"SELECT * FROM c WHERE c.storeType.id = {storeTypeIdKey}",
+            new Dictionary<string, string>() { [storeTypeIdKey] = command.Id.ToString() });
+        try
+        {
+            using var scoped = _serviceProvider.CreateScope();
+            var mediator = scoped.ServiceProvider.GetService<IMediator>();
+
+            var updateTasks = affectedStores.Select(i =>
+            {
+                var updateStoreCommand = new UpdateStoreCommand() { Id = i.Id, StoreTypeId = command.Id };
+
+                return mediator.Send(updateStoreCommand);
+            }).ToList();
+
+
+            await Task.WhenAll(updateTasks);
+        }
+
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to run rebuild materialize view {command.GetType().Name}");
+        }
     }
 }
