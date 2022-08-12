@@ -6,19 +6,22 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Pondrop.Service.Store.Api.Configurations.Extensions;
 using Pondrop.Service.Store.Api.Middleware;
+using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Application.Interfaces;
+using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Infrastructure.CosmosDb;
 using Pondrop.Service.Store.Infrastructure.Dapr;
-using Pondrop.Service.Store.Infrastructure.Models;
+using Pondrop.Service.Store.Infrastructure.ServiceBus;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 JsonConvert.DefaultSettings = () => new JsonSerializerSettings()
 {
     ContractResolver = new DefaultContractResolver()
     {
-      NamingStrategy  = new CamelCaseNamingStrategy()
+        NamingStrategy = new CamelCaseNamingStrategy()
     },
     DateTimeZoneHandling = DateTimeZoneHandling.Utc
 };
@@ -32,6 +35,12 @@ builder.Configuration
     .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName.ToLowerInvariant()}.json", optional: true, reloadOnChange: true);
 
+services.Configure<JsonOptions>(options =>
+{
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = false;
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
+
 // Add services to the container.
 services.AddVersionedApiExplorer(options => options.GroupNameFormat = "'v'VVV");
 services.AddApiVersioning(options =>
@@ -44,7 +53,7 @@ services.AddApiVersioning(options =>
 services.AddLogging(config =>
 {
     config.AddDebug();
-    config.AddConsole();    
+    config.AddConsole();
 });
 services
     .AddControllers()
@@ -55,8 +64,8 @@ services.AddSwaggerGen();
 
 services.AddAutoMapper(
     typeof(Result<>),
-    typeof(UserEntity),
-    typeof(TodoItemEntity));
+    typeof(EventEntity),
+    typeof(EventRepository));
 services.AddMediatR(
     typeof(Result<>));
 services.AddFluentValidation(config =>
@@ -65,12 +74,26 @@ services.AddFluentValidation(config =>
     });
 
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
-services.Configure<UserUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(UserUpdateConfiguration.Key));
+services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
+services.Configure<RetailerUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(RetailerUpdateConfiguration.Key));
+services.Configure<StoreTypeUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreTypeUpdateConfiguration.Key));
+services.Configure<StoreUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreUpdateConfiguration.Key));
 
-services.AddSingleton<ITodoRepository, TodoRepository>();
+services.AddHostedService<ServiceBusHostedService>();
+services.AddSingleton<IServiceBusListenerService, ServiceBusListenerService>();
+
+services.AddHostedService<RebuildMaterializeViewHostedService>();
+services.AddSingleton<IRebuildCheckpointQueueService, RebuildCheckpointQueueService>();
+
+services.AddSingleton<IAddressService, AddressService>();
+services.AddSingleton<IUserService, UserService>();
 services.AddSingleton<IEventRepository, EventRepository>();
-services.AddSingleton<IMaterializedViewRepository<UserEntity>, MaterializedViewRepository<UserEntity>>();
+services.AddSingleton<ICheckpointRepository<RetailerEntity>, CheckpointRepository<RetailerEntity>>();
+services.AddSingleton<ICheckpointRepository<StoreTypeEntity>, CheckpointRepository<StoreTypeEntity>>();
+services.AddSingleton<ICheckpointRepository<StoreEntity>, CheckpointRepository<StoreEntity>>();
+services.AddSingleton<IContainerRepository<StoreViewRecord>, ContainerRepository<StoreViewRecord>>();
 services.AddSingleton<IDaprService, DaprService>();
+services.AddSingleton<IServiceBusService, ServiceBusService>();
 
 var app = builder.Build();
 var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();

@@ -20,8 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Commands\Todos" />
-    <Folder Include="Queries\Todos" />
+    <None Remove="Commands\StoreView\" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Folder Include="Commands\StoreView\" />
+  </ItemGroup>
 </Project>

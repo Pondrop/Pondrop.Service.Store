@@ -400,3 +400,4 @@ FodyWeavers.xsd
 
 # local settings file
 local.settings.json
+appsettings.local.json
