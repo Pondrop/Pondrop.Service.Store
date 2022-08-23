@@ -1,3 +1,4 @@
+using AspNetCore.Proxy;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Pondrop.Service.Store.Api.Configurations.Extensions;
 using Pondrop.Service.Store.Api.Middleware;
+using Pondrop.Service.Store.Api.Models;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
@@ -41,6 +43,8 @@ services.Configure<JsonOptions>(options =>
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 
+services.AddProxies();
+
 // Add services to the container.
 services.AddVersionedApiExplorer(options => options.GroupNameFormat = "'v'VVV");
 services.AddApiVersioning(options =>
@@ -75,6 +79,7 @@ services.AddFluentValidation(config =>
 
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
 services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
+services.Configure<StoreSearchIndexConfiguration>(configuration.GetSection(StoreSearchIndexConfiguration.Key));
 services.Configure<RetailerUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(RetailerUpdateConfiguration.Key));
 services.Configure<StoreTypeUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreTypeUpdateConfiguration.Key));
 services.Configure<StoreUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreUpdateConfiguration.Key));

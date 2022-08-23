@@ -1,10 +1,13 @@
+using AspNetCore.Proxy;
+using AspNetCore.Proxy.Options;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Pondrop.Service.Store.Api.Models;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Queries;
-using Pondrop.Service.Store.Infrastructure.ServiceBus;
 
 namespace Pondrop.Service.Store.ApiControllers;
 
@@ -15,18 +18,31 @@ public class StoreController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IServiceBusService _serviceBusService;
     private readonly IRebuildCheckpointQueueService _rebuildCheckpointQueueService;
+    private readonly StoreSearchIndexConfiguration _searchIdxConfig;
     private readonly ILogger<StoreController> _logger;
 
+    private readonly HttpProxyOptions _searchProxyOptions;
+    
     public StoreController(
         IMediator mediator,
         IServiceBusService serviceBusService,
         IRebuildCheckpointQueueService rebuildCheckpointQueueService,
+        IOptions<StoreSearchIndexConfiguration> searchIdxConfig,
         ILogger<StoreController> logger)
     {
         _mediator = mediator;
         _serviceBusService = serviceBusService;
         _rebuildCheckpointQueueService = rebuildCheckpointQueueService;
+        _searchIdxConfig = searchIdxConfig.Value;
         _logger = logger;
+        
+        _searchProxyOptions = HttpProxyOptionsBuilder
+            .Instance
+            .WithBeforeSend((httpContext, requestMessage) =>
+            {
+                requestMessage.Headers.Add("api-key", _searchIdxConfig.ApiKey);
+                return Task.CompletedTask;
+            }).Build();
     }
 
     [HttpGet]
@@ -152,5 +168,19 @@ public class StoreController : ControllerBase
     {
         _rebuildCheckpointQueueService.Queue(new RebuildStoreCheckpointCommand());
         return new AcceptedResult();
+    }
+    
+    [HttpGet, HttpPost]
+    [Route("search")]
+    public Task ProxySearchCatchAll()
+    {
+        var queryString = this.Request.QueryString.Value?.TrimStart('?') ?? string.Empty;
+        var url = Path.Combine(
+            _searchIdxConfig.BaseUrl,
+            "indexes",
+            _searchIdxConfig.IndexName,
+            $"docs?api-version=2021-04-30-Preview&{queryString}");
+        
+        return this.HttpProxyAsync(url, _searchProxyOptions);
     }
 }
