@@ -40,6 +40,7 @@ public class GetStoreByIdQueryHandler : IRequestHandler<GetStoreByIdQuery, Resul
         try
         {
             var record = await _viewRepository.GetByIdAsync(query.Id);
+
             result = record is not null
                 ? Result<StoreViewRecord?>.Success(record)
                 : Result<StoreViewRecord?>.Success(null);

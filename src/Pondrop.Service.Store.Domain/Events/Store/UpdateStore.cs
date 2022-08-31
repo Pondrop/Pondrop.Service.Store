@@ -5,5 +5,8 @@ namespace Pondrop.Service.Store.Domain.Events.Store;
 public record UpdateStore(
     string? Name,
     string? Status,
+    string? Phone,
+    string? Email,
+    string? OpenHours,
     Guid? RetailerId,
     Guid? StoreTypeId) : EventPayload;

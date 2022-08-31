@@ -1,4 +1,6 @@
-﻿namespace Pondrop.Service.Store.Domain.Models;
+﻿using Microsoft.Azure.Cosmos.Spatial;
+
+namespace Pondrop.Service.Store.Domain.Models;
 
 public record StoreAddressRecord(
         Guid Id,
@@ -11,6 +13,7 @@ public record StoreAddressRecord(
         string Country,
         double Latitude,
         double Longitude,
+        Point LocationSort,
         string CreatedBy,
         string UpdatedBy,
         DateTime CreatedUtc,
@@ -28,6 +31,7 @@ public record StoreAddressRecord(
         string.Empty,
         0,
         0,
+        new Point(0, 0),
         string.Empty,
         string.Empty,
         DateTime.MinValue,
@@ -35,4 +39,3 @@ public record StoreAddressRecord(
     {
     }
 }
-    

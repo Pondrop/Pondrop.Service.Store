@@ -5,6 +5,9 @@ public record StoreRecord(
         string Name,
         string Status,
         string ExternalReferenceId,
+        string Phone,
+        string Email,
+        string OpenHours,
         List<StoreAddressRecord> Addresses,
         Guid RetailerId,
         Guid StoreTypeId,
@@ -16,6 +19,9 @@ public record StoreRecord(
 {
     public StoreRecord() : this(
         Guid.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
         string.Empty,
         string.Empty,
         string.Empty,

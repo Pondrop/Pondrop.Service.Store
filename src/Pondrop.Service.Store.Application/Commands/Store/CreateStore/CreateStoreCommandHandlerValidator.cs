@@ -14,7 +14,10 @@ public class CreateStoreCommandHandlerValidator : AbstractValidator<CreateStoreC
         RuleFor(x => x.Name).NotEmpty();
         RuleFor(x => x.Status).NotEmpty();
         RuleFor(x => x.ExternalReferenceId).NotEmpty();
-        
+        RuleFor(x => x.Phone).NotEmpty();
+        RuleFor(x => x.Email).NotEmpty();
+        RuleFor(x => x.OpenHours).NotEmpty();
+
         RuleFor(x => x.Address).NotNull();
         RuleFor(x => x.Address!.ExternalReferenceId).NotEmpty();
         RuleFor(x => x.Address!.AddressLine1).NotEmpty();

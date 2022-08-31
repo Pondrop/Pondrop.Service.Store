@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Azure.Cosmos.Spatial;
+using Newtonsoft.Json;
 using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Events.Store;
+using System.Spatial;
 
 namespace Pondrop.Service.Store.Domain.Models;
 
@@ -25,9 +27,9 @@ public record StoreEntity : EventEntity
         }
     }
 
-    public StoreEntity(string name, string status, string externalReferenceId, Guid retailerId, Guid storeTypeId, string createdBy) : this()
+    public StoreEntity(string name, string status, string externalReferenceId, string phone, string email, string openHours,  Guid retailerId, Guid storeTypeId, string createdBy) : this()
     {
-        var create = new CreateStore(Guid.NewGuid(), name, status, externalReferenceId, retailerId, storeTypeId);
+        var create = new CreateStore(Guid.NewGuid(), name, status, phone, email, openHours, externalReferenceId, retailerId, storeTypeId);
         Apply(create, createdBy);
     }
 
@@ -36,6 +38,15 @@ public record StoreEntity : EventEntity
 
     [JsonProperty(PropertyName = "status")]
     public string Status { get; private set; }
+
+    [JsonProperty(PropertyName = "phone")]
+    public string Phone { get; private set; }
+
+    [JsonProperty(PropertyName = "email")]
+    public string Email { get; private set; }
+
+    [JsonProperty(PropertyName = "openHours")]
+    public string OpenHours { get; private set; }
 
     [JsonProperty(PropertyName = "externalReferenceId")]
     public string ExternalReferenceId { get; private set; }
@@ -94,6 +105,9 @@ public record StoreEntity : EventEntity
         Id = create.Id;
         Name = create.Name;
         Status = create.Status;
+        Phone = create.Phone;
+        Email = create.Email;
+        OpenHours = create.OpenHours;
         ExternalReferenceId = create.ExternalReferenceId;
         RetailerId = create.RetailerId;
         StoreTypeId = create.StoreTypeId;
@@ -110,6 +124,9 @@ public record StoreEntity : EventEntity
 
         Name = update.Name ?? Name;
         Status = update.Status ?? Status;
+        Phone = update.Phone ?? Phone;
+        Email = update.Email ?? Email;
+        OpenHours = update.OpenHours ?? OpenHours;
         RetailerId = update.RetailerId ?? RetailerId;
         StoreTypeId = update.StoreTypeId ?? StoreTypeId;
 
@@ -136,6 +153,7 @@ public record StoreEntity : EventEntity
             addAddress.Country,
             addAddress.Latitude,
             addAddress.Longitude,
+            new Point(addAddress.Latitude, addAddress.Longitude),
             createdBy,
             createdBy,
             createdUtc,
@@ -161,8 +179,10 @@ public record StoreEntity : EventEntity
             Latitude = updateAddress.Latitude ?? address.Latitude,
             Longitude = updateAddress.Latitude ?? address.Longitude,
             UpdatedBy = updatedBy,
-            UpdatedUtc = updatedUtc
+            UpdatedUtc = updatedUtc,
+            LocationSort = new Point(updateAddress.Latitude ?? address.Latitude, updateAddress.Latitude ?? address.Longitude),
         };
+
 
         UpdatedBy = updatedBy;
         UpdatedUtc = updatedUtc;

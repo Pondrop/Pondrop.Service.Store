@@ -70,6 +70,9 @@ public class CreateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Create
                 command.Name,
                 command.Status,
                 command.ExternalReferenceId,
+                command.Phone,
+                command.Email,
+                command.OpenHours,
                 retailerTask.Result.Id,
                 storeTypeTask.Result.Id,
                 _userService.CurrentUserName());

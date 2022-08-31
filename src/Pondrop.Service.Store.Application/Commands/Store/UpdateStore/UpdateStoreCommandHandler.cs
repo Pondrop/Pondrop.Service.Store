@@ -82,6 +82,9 @@ public class UpdateStoreCommandHandler : DirtyCommandHandler<StoreEntity, Update
                 var evtPayload = new UpdateStore(
                     command.Name,
                     command.Status,
+                    command.Phone,
+                    command.Email,
+                    command.OpenHours,
                     retailerTask.Result is not null ? retailerTask.Result.Id : null,
                     storeTypeTask.Result is not null ? storeTypeTask.Result.Id : null);
                 var createdBy = _userService.CurrentUserName();

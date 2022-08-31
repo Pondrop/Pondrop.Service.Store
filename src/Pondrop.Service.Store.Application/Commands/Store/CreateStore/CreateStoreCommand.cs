@@ -9,7 +9,9 @@ public class CreateStoreCommand : IRequest<Result<StoreRecord>>
     public string Name { get; init; } = string.Empty;
     public string Status { get; init; } = string.Empty;
     public string ExternalReferenceId { get; init; } = string.Empty;
-
+    public string Phone { get; init; } = string.Empty;
+    public string OpenHours { get; init; } = string.Empty;
+    public string Email { get; init; } = string.Empty;
     public AddressRecord? Address { get; init; } = default;
 
     public Guid RetailerId { get; init; } = Guid.Empty;
@@ -41,4 +43,3 @@ public record AddressRecord(
     {
     }
 }
-    
