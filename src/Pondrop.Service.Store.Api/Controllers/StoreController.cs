@@ -57,10 +57,6 @@ public class StoreController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllStores()
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
-
         var result = await _mediator.Send(new GetAllStoresQuery());
         return result.Match<IActionResult>(
             i => new OkObjectResult(i),
@@ -74,10 +70,6 @@ public class StoreController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStoreById([FromRoute] Guid id)
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
-
         var result = await _mediator.Send(new GetStoreByIdQuery() { Id = id });
         return result.Match<IActionResult>(
             i => i is not null ? new OkObjectResult(i) : new NotFoundResult(),
@@ -90,9 +82,6 @@ public class StoreController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateStore([FromBody] CreateStoreCommand command)
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
 
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(

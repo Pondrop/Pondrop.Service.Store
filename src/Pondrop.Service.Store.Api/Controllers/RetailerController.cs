@@ -39,10 +39,6 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllRetailers()
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
-
         var result = await _mediator.Send(new GetAllRetailersQuery());
         return result.Match<IActionResult>(
             i => new OkObjectResult(i),
@@ -56,10 +52,6 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetRetailerById([FromRoute] Guid id)
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
-
         var result = await _mediator.Send(new GetRetailerByIdQuery() { Id = id });
         return result.Match<IActionResult>(
             i => i is not null ? new OkObjectResult(i) : new NotFoundResult(),
@@ -72,10 +64,6 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateRetailer([FromBody] CreateRetailerCommand command)
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
-
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(
             async i =>
@@ -92,10 +80,7 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateRetailer([FromBody] UpdateRetailerCommand command)
     {
-        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
-        if (claimsPrincipal is null)
-            return new UnauthorizedResult();
-
+     
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(
             async i =>
