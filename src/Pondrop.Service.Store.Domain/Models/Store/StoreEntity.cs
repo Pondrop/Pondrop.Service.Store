@@ -153,7 +153,7 @@ public record StoreEntity : EventEntity
             addAddress.Country,
             addAddress.Latitude,
             addAddress.Longitude,
-            new Point(addAddress.Latitude, addAddress.Longitude),
+            new Point(addAddress.Longitude, addAddress.Latitude),
             createdBy,
             createdBy,
             createdUtc,
@@ -177,10 +177,10 @@ public record StoreEntity : EventEntity
             Postcode = updateAddress.Postcode ?? address.Postcode,
             Country = updateAddress.Country ?? address.Country,
             Latitude = updateAddress.Latitude ?? address.Latitude,
-            Longitude = updateAddress.Latitude ?? address.Longitude,
+            Longitude = updateAddress.Longitude ?? address.Longitude,
             UpdatedBy = updatedBy,
             UpdatedUtc = updatedUtc,
-            LocationSort = new Point(updateAddress.Latitude ?? address.Latitude, updateAddress.Latitude ?? address.Longitude),
+            LocationSort = new Point(updateAddress.Longitude ?? address.Longitude, updateAddress.Latitude ?? address.Latitude),
         };
 
 
