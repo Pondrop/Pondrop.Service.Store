@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using Pondrop.Service.Store.Api.Services;
+using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Queries;
@@ -15,15 +17,18 @@ public class StoreTypeController : ControllerBase
     private readonly IServiceBusService _serviceBusService;
     private readonly IRebuildCheckpointQueueService _rebuildCheckpointQueueService;
     private readonly ILogger<StoreTypeController> _logger;
+    private readonly ITokenProvider _jwtTokenProvider;
 
     public StoreTypeController(
         IMediator mediator,
+        ITokenProvider jWTTokenProvider,
         IServiceBusService serviceBusService,
         IRebuildCheckpointQueueService rebuildCheckpointQueueService,
         ILogger<StoreTypeController> logger)
     {
         _mediator = mediator;
         _serviceBusService = serviceBusService;
+        _jwtTokenProvider = jWTTokenProvider;
         _rebuildCheckpointQueueService = rebuildCheckpointQueueService;
         _logger = logger;
     }
@@ -33,6 +38,10 @@ public class StoreTypeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllStoreTypes()
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(new GetAllStoreTypesQuery());
         return result.Match<IActionResult>(
             i => new OkObjectResult(i),
@@ -46,6 +55,10 @@ public class StoreTypeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStoreTypeById([FromRoute] Guid id)
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(new GetStoreTypeByIdQuery() { Id = id });
         return result.Match<IActionResult>(
             i => i is not null ? new OkObjectResult(i) : new NotFoundResult(),
@@ -58,6 +71,10 @@ public class StoreTypeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateStoreType([FromBody] CreateStoreTypeCommand command)
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(
             async i =>
@@ -74,6 +91,10 @@ public class StoreTypeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateStoreType([FromBody] UpdateStoreTypeCommand command)
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(
             async i =>

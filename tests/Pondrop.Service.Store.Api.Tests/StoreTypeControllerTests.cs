@@ -7,6 +7,7 @@ using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Moq;
 using Pondrop.Service.Store.Api.Services;
+using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.ApiControllers;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
@@ -15,6 +16,7 @@ using Pondrop.Service.Store.Tests.Faker;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using Xunit;
 
 namespace Pondrop.Service.Store.Api.Tests
@@ -25,13 +27,17 @@ namespace Pondrop.Service.Store.Api.Tests
         private readonly Mock<IServiceBusService> _serviceBusServiceMock;
         private readonly Mock<IRebuildCheckpointQueueService> _rebuildMaterializeViewQueueServiceMock;
         private readonly Mock<ILogger<StoreTypeController>> _loggerMock;
-        
+        private readonly Mock<ITokenProvider> _jwtProviderMock;
+
         public StoreTypeControllerTests()
         {
             _mediatorMock = new Mock<IMediator>();
             _serviceBusServiceMock = new Mock<IServiceBusService>();
             _rebuildMaterializeViewQueueServiceMock = new Mock<IRebuildCheckpointQueueService>();
             _loggerMock = new Mock<ILogger<StoreTypeController>>();
+            _jwtProviderMock = new Mock<ITokenProvider>();
+
+            _jwtProviderMock.Setup(s => s.ValidateToken(It.IsAny<string>())).Returns(new ClaimsPrincipal());
         }
 
         [Fact]
@@ -248,6 +254,7 @@ namespace Pondrop.Service.Store.Api.Tests
         private StoreTypeController GetController() =>
             new StoreTypeController(
                 _mediatorMock.Object,
+                _jwtProviderMock.Object,
                 _serviceBusServiceMock.Object,
                 _rebuildMaterializeViewQueueServiceMock.Object,
                 _loggerMock.Object

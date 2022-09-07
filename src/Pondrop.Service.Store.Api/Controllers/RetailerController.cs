@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using Pondrop.Service.Store.Api.Services;
+using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Queries;
@@ -16,9 +18,11 @@ public class RetailerController : ControllerBase
     private readonly IServiceBusService _serviceBusService;
     private readonly IRebuildCheckpointQueueService _rebuildCheckpointQueueService;
     private readonly ILogger<RetailerController> _logger;
+    private readonly ITokenProvider _jwtTokenProvider;
 
     public RetailerController(
         IMediator mediator,
+        ITokenProvider jWTTokenProvider,
         IServiceBusService serviceBusService,
         IRebuildCheckpointQueueService rebuildCheckpointQueueService,
         ILogger<RetailerController> logger)
@@ -26,6 +30,7 @@ public class RetailerController : ControllerBase
         _mediator = mediator;
         _serviceBusService = serviceBusService;
         _rebuildCheckpointQueueService = rebuildCheckpointQueueService;
+        _jwtTokenProvider = jWTTokenProvider;
         _logger = logger;
     }
 
@@ -34,6 +39,10 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllRetailers()
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(new GetAllRetailersQuery());
         return result.Match<IActionResult>(
             i => new OkObjectResult(i),
@@ -47,6 +56,10 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetRetailerById([FromRoute] Guid id)
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(new GetRetailerByIdQuery() { Id = id });
         return result.Match<IActionResult>(
             i => i is not null ? new OkObjectResult(i) : new NotFoundResult(),
@@ -59,6 +72,10 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateRetailer([FromBody] CreateRetailerCommand command)
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(
             async i =>
@@ -75,6 +92,10 @@ public class RetailerController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateRetailer([FromBody] UpdateRetailerCommand command)
     {
+        var claimsPrincipal = _jwtTokenProvider.ValidateToken(Request?.Headers[HeaderNames.Authorization] ?? string.Empty);
+        if (claimsPrincipal is null)
+            return new UnauthorizedResult();
+
         var result = await _mediator.Send(command);
         return await result.MatchAsync<IActionResult>(
             async i =>

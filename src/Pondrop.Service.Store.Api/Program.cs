@@ -1,14 +1,17 @@
 using AspNetCore.Proxy;
 using FluentValidation.AspNetCore;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Pondrop.Service.Store.Api.Configurations.Extensions;
 using Pondrop.Service.Store.Api.Middleware;
 using Pondrop.Service.Store.Api.Models;
 using Pondrop.Service.Store.Api.Services;
+using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
@@ -16,6 +19,7 @@ using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Infrastructure.CosmosDb;
 using Pondrop.Service.Store.Infrastructure.Dapr;
 using Pondrop.Service.Store.Infrastructure.ServiceBus;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -77,6 +81,27 @@ services.AddFluentValidation(config =>
         config.RegisterValidatorsFromAssemblyContaining(typeof(Result<>));
     });
 
+
+services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(o =>
+{
+    var Key = Encoding.UTF8.GetBytes(configuration["JWT:Key"]);
+    o.SaveToken = true;
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = configuration["JWT:Issuer"],
+        ValidAudience = configuration["JWT:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Key)
+    };
+});
+
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
 services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
 services.Configure<StoreSearchIndexConfiguration>(configuration.GetSection(StoreSearchIndexConfiguration.Key));
@@ -99,6 +124,7 @@ services.AddSingleton<ICheckpointRepository<StoreEntity>, CheckpointRepository<S
 services.AddSingleton<IContainerRepository<StoreViewRecord>, ContainerRepository<StoreViewRecord>>();
 services.AddSingleton<IDaprService, DaprService>();
 services.AddSingleton<IServiceBusService, ServiceBusService>();
+services.AddSingleton<ITokenProvider, JWTTokenProvider>();
 
 var app = builder.Build();
 var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
@@ -108,6 +134,7 @@ var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>()
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseSwaggerDocumentation(provider);
 
+app.UseAuthentication();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

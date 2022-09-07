@@ -3,10 +3,13 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Moq;
+using Pondrop.Service.Store.Api.Models;
 using Pondrop.Service.Store.Api.Services;
+using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.ApiControllers;
 using Pondrop.Service.Store.Application.Commands;
 using Pondrop.Service.Store.Application.Interfaces;
@@ -15,6 +18,7 @@ using Pondrop.Service.Store.Tests.Faker;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using Xunit;
 
 namespace Pondrop.Service.Store.Api.Tests
@@ -25,13 +29,20 @@ namespace Pondrop.Service.Store.Api.Tests
         private readonly Mock<IServiceBusService> _serviceBusServiceMock;
         private readonly Mock<IRebuildCheckpointQueueService> _rebuildMaterializeViewQueueServiceMock;
         private readonly Mock<ILogger<StoreController>> _loggerMock;
-        
+        private readonly Mock<ITokenProvider> _jwtProviderMock;
+        private readonly Mock<IOptions<StoreSearchIndexConfiguration>> _searchIdxConfigMock;
+       
+
         public StoreControllerTests()
         {
             _mediatorMock = new Mock<IMediator>();
             _serviceBusServiceMock = new Mock<IServiceBusService>();
             _rebuildMaterializeViewQueueServiceMock = new Mock<IRebuildCheckpointQueueService>();
             _loggerMock = new Mock<ILogger<StoreController>>();
+            _jwtProviderMock = new Mock<ITokenProvider>();
+            _searchIdxConfigMock = new Mock<IOptions<StoreSearchIndexConfiguration>>();
+
+            _jwtProviderMock.Setup(s => s.ValidateToken(It.IsAny<string>())).Returns(new ClaimsPrincipal());
         }
 
         [Fact]
@@ -373,8 +384,10 @@ namespace Pondrop.Service.Store.Api.Tests
         private StoreController GetController() =>
             new StoreController(
                 _mediatorMock.Object,
+                _jwtProviderMock.Object,
                 _serviceBusServiceMock.Object,
                 _rebuildMaterializeViewQueueServiceMock.Object,
+                _searchIdxConfigMock.Object,
                 _loggerMock.Object
             );
     }
