@@ -9,5 +9,6 @@ public class StoreProfile : Profile
     {
         CreateMap<StoreEntity, StoreRecord>();
         CreateMap<StoreEntity, StoreViewRecord>();
+        CreateMap<StoreEntity, StoreSearchIndexViewRecord>();
     }
 }

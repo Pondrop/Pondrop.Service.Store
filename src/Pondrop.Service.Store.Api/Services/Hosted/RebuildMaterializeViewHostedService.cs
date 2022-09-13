@@ -35,7 +35,16 @@ public class RebuildMaterializeViewHostedService : BackgroundService
                     case RebuildStoreCheckpointCommand store:
                         await mediator!.Send(new RebuildStoreViewCommand(), stoppingToken);
                         break;
+                    case RebuildRetailerCheckpointCommand retailer:
+                        await mediator!.Send(new RebuildRetailerCheckpointCommand(), stoppingToken);
+                        break;
+                    case RebuildStoreTypeCheckpointCommand storeType:
+                        await mediator!.Send(new RebuildStoreTypeCheckpointCommand(), stoppingToken);
+                        break;
                 }
+
+
+                await mediator!.Send(new RebuildStoreSearchIndexViewCommand(), stoppingToken);
             }
             catch (Exception ex)
             {

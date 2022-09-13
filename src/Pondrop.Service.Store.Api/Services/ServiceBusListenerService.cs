@@ -106,12 +106,15 @@ public class ServiceBusListenerService : IServiceBusListenerService
                             {
                                 case UpdateRetailerCheckpointByIdCommand retailer:
                                     await mediator!.Send(new UpdateStoreViewCommand() { RetailerId = retailer.Id });
+                                    await mediator!.Send(new UpdateStoreSearchIndexViewCommand() { RetailerId = retailer.Id });
                                     break;
                                 case UpdateStoreTypeCheckpointByIdCommand storeType:
                                     await mediator!.Send(new UpdateStoreViewCommand() { StoreTypeId = storeType.Id });
+                                    await mediator!.Send(new UpdateStoreSearchIndexViewCommand() { StoreTypeId = storeType.Id });
                                     break;
                                 case UpdateStoreCheckpointByIdCommand store:
                                     await mediator!.Send(new UpdateStoreViewCommand() { StoreId = store.Id });
+                                    await mediator!.Send(new UpdateStoreSearchIndexViewCommand() { StoreId = store.Id });
                                     break;
                             }
                         }

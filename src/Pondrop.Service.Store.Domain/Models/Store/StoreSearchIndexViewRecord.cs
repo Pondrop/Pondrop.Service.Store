@@ -1,8 +1,9 @@
-﻿using System.Spatial;
+﻿using Microsoft.Azure.Cosmos.Spatial;
+using System.Spatial;
 
 namespace Pondrop.Service.Store.Domain.Models;
 
-public record StoreViewRecord(
+public record StoreSearchIndexViewRecord(
         Guid Id,
         string Name,
         string Status,
@@ -10,6 +11,17 @@ public record StoreViewRecord(
         string Phone,
         string Email,
         string OpenHours,
+        Guid AddressId,
+        string AddressExternalReferenceId,
+        string AddressLine1,
+        string AddressLine2,
+        string Suburb,
+        string State,
+        string Postcode,
+        string Country,
+        double Latitude,
+        double Longitude,
+        Point LocationSort,
         Guid RetailerId,
         RetailerRecord Retailer,
         Guid StoreTypeId,
@@ -19,7 +31,7 @@ public record StoreViewRecord(
         DateTime CreatedUtc,
         DateTime UpdatedUtc)
 {
-    public StoreViewRecord() : this(
+    public StoreSearchIndexViewRecord() : this(
         Guid.Empty,
         string.Empty,
         string.Empty,
@@ -27,6 +39,17 @@ public record StoreViewRecord(
         string.Empty,
         string.Empty,
         string.Empty,
+        Guid.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        0,
+        0,
+        new Point(0, 0),
         Guid.Empty,
         new RetailerRecord(),
         Guid.Empty,

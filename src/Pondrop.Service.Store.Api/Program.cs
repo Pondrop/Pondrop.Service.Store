@@ -144,6 +144,7 @@ services.AddSingleton<ICheckpointRepository<RetailerEntity>, CheckpointRepositor
 services.AddSingleton<ICheckpointRepository<StoreTypeEntity>, CheckpointRepository<StoreTypeEntity>>();
 services.AddSingleton<ICheckpointRepository<StoreEntity>, CheckpointRepository<StoreEntity>>();
 services.AddSingleton<IContainerRepository<StoreViewRecord>, ContainerRepository<StoreViewRecord>>();
+services.AddSingleton<IContainerRepository<StoreSearchIndexViewRecord>, ContainerRepository<StoreSearchIndexViewRecord>>();
 services.AddSingleton<IDaprService, DaprService>();
 services.AddSingleton<IServiceBusService, ServiceBusService>();
 services.AddSingleton<ITokenProvider, JWTTokenProvider>();
