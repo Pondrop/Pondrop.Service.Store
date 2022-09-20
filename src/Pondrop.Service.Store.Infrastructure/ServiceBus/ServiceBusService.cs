@@ -30,7 +30,6 @@ namespace Pondrop.Service.Store.Infrastructure.ServiceBus
             _config = config.Value;
             _serviceBusClient = new ServiceBusClient(_config.ConnectionString);
             _sender = _serviceBusClient.CreateSender(_config.QueueName);
-
         }
 
         public Task SendMessageAsync(object payload)

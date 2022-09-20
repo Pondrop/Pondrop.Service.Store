@@ -127,6 +127,7 @@ services.AddAuthentication(x =>
 services.Configure<CosmosConfiguration>(configuration.GetSection(CosmosConfiguration.Key));
 services.Configure<ServiceBusConfiguration>(configuration.GetSection(ServiceBusConfiguration.Key));
 services.Configure<StoreSearchIndexConfiguration>(configuration.GetSection(StoreSearchIndexConfiguration.Key));
+services.Configure<SubmissionViewTopicConfiguration>(configuration.GetSection(EventGridTopicConfiguration.Key).GetSection(SubmissionViewTopicConfiguration.Key));
 services.Configure<RetailerUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(RetailerUpdateConfiguration.Key));
 services.Configure<StoreTypeUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreTypeUpdateConfiguration.Key));
 services.Configure<StoreUpdateConfiguration>(configuration.GetSection(DaprEventTopicConfiguration.Key).GetSection(StoreUpdateConfiguration.Key));

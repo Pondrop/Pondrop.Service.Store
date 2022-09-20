@@ -49,7 +49,6 @@ public static class StoreFaker
             .RuleFor(x => x.Id, f => Guid.NewGuid())
             .RuleFor(x => x.Name, f => f.PickRandom(Names))
             .RuleFor(x => x.ExternalReferenceId, f => Guid.NewGuid().ToString())
-            .RuleFor(x => x.Addresses, f => GetStoreAddressRecords(1))
             .RuleFor(x => x.Status, f => f.PickRandom(Statues))
             .RuleFor(x => x.RetailerId, f => retailer.Id)
             .RuleFor(x => x.Retailer, f => retailer)

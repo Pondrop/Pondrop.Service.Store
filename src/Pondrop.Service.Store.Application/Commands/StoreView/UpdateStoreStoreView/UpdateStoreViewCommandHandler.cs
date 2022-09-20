@@ -10,7 +10,7 @@ using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
-public class UpdateStoreViewCommandHandler : IRequestHandler<UpdateStoreViewCommand, Result<int>>
+public class UpdateStoreViewCommandHandler : IRequestHandler<UpdateStoreViewCommand, Result<List<SubmissionStoreViewRecord>>>
 {
     private readonly ICheckpointRepository<RetailerEntity> _retailerCheckpointRepository;
     private readonly ICheckpointRepository<StoreTypeEntity> _storeTypeCheckpointRepository;
@@ -38,12 +38,12 @@ public class UpdateStoreViewCommandHandler : IRequestHandler<UpdateStoreViewComm
         _logger = logger;
     }
 
-    public async Task<Result<int>> Handle(UpdateStoreViewCommand command, CancellationToken cancellationToken)
+    public async Task<Result<List<SubmissionStoreViewRecord>>> Handle(UpdateStoreViewCommand command, CancellationToken cancellationToken)
     {
         if (!command.StoreId.HasValue && !command.RetailerId.HasValue && !command.StoreTypeId.HasValue)
-            return Result<int>.Success(0);
+            return Result<List<SubmissionStoreViewRecord>>.Success(new List<SubmissionStoreViewRecord>());
 
-        var result = default(Result<int>);
+        var result = default(Result<List<SubmissionStoreViewRecord>>);
 
         try
         {
@@ -55,6 +55,8 @@ public class UpdateStoreViewCommandHandler : IRequestHandler<UpdateStoreViewComm
 
             var retailerLookup = retailersTask.Result.ToDictionary(i => i.Id, i => _mapper.Map<RetailerRecord>(i));
             var storeTypeLookup = storeTypesTask.Result.ToDictionary(i => i.Id, i => _mapper.Map<StoreTypeRecord>(i));
+
+            var stores = new List<SubmissionStoreViewRecord>();
 
             var tasks = affectedStoresTask.Result.Select(async i =>
             {
@@ -70,6 +72,14 @@ public class UpdateStoreViewCommandHandler : IRequestHandler<UpdateStoreViewComm
 
                     var result = await _containerRepository.UpsertAsync(storeView);
                     success = result != null;
+
+                    if (success)
+                        stores.Add(new SubmissionStoreViewRecord()
+                        {
+                            StoreId = i.Id,
+                            Name = i.Name,
+                            RetailerName = storeView.Retailer.Name
+                        });
                 }
                 catch (Exception ex)
                 {
@@ -81,12 +91,12 @@ public class UpdateStoreViewCommandHandler : IRequestHandler<UpdateStoreViewComm
 
             await Task.WhenAll(tasks);
 
-            result = Result<int>.Success(tasks.Count(t => t.Result));
+            result = Result<List<SubmissionStoreViewRecord>>.Success(stores);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, FailedToMessage(command));
-            result = Result<int>.Error(ex);
+            result = Result<List<SubmissionStoreViewRecord>>.Error(ex);
         }
 
         return result;

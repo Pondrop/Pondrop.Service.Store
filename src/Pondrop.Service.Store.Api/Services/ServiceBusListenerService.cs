@@ -1,15 +1,14 @@
-using AutoMapper;
+using Azure;
 using Azure.Messaging.ServiceBus;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using System.Text;
-using System.Xml.Linq;
+using Azure.Messaging.EventGrid;
 
 namespace Pondrop.Service.Store.Api.Services;
 
@@ -23,9 +22,11 @@ public class ServiceBusListenerService : IServiceBusListenerService
     private readonly ServiceBusClient _serviceBusClient;
 
     private ServiceBusProcessor _processor;
+    private readonly EventGridPublisherClient _submissionViewTopic;
 
     public ServiceBusListenerService(
         IOptions<ServiceBusConfiguration> config,
+        IOptions<SubmissionViewTopicConfiguration> submissionViewTopicConfig,
         IMediator mediator,
         IServiceProvider serviceProvider,
         ILogger<ServiceBusListenerService> logger)
@@ -39,9 +40,18 @@ public class ServiceBusListenerService : IServiceBusListenerService
         if (string.IsNullOrEmpty(config.Value?.QueueName))
             throw new ArgumentException("Service Bus 'QueueName' cannot be null or empty"); ;
 
+        if (string.IsNullOrEmpty(submissionViewTopicConfig.Value?.Endpoint))
+            throw new ArgumentException("Event Grid Topic Endpoint cannot be null or empty");
+        if (string.IsNullOrEmpty(submissionViewTopicConfig.Value?.AccessKey))
+            throw new ArgumentException("Event Grid Topic AccessKey cannot be null or empty");
+
         _config = config.Value;
 
         _serviceBusClient = new ServiceBusClient(_config.ConnectionString);
+
+        _submissionViewTopic = new EventGridPublisherClient(new Uri(submissionViewTopicConfig.Value.Endpoint),
+            new AzureKeyCredential(submissionViewTopicConfig.Value.AccessKey));
+
     }
 
 
@@ -102,10 +112,14 @@ public class ServiceBusListenerService : IServiceBusListenerService
                             var mediator = scoped.ServiceProvider.GetService<IMediator>();
                             await mediator!.Send(command);
 
+                            var storeIds = new List<SubmissionStoreViewRecord>();
+                            var result = default(Result<List<SubmissionStoreViewRecord>>);
+
+
                             switch (command)
                             {
                                 case UpdateRetailerCheckpointByIdCommand retailer:
-                                    await mediator!.Send(new UpdateStoreViewCommand() { RetailerId = retailer.Id });
+                                    result = await mediator!.Send(new UpdateStoreViewCommand() { RetailerId = retailer.Id });
                                     await mediator!.Send(new UpdateStoreSearchIndexViewCommand() { RetailerId = retailer.Id });
                                     break;
                                 case UpdateStoreTypeCheckpointByIdCommand storeType:
@@ -113,10 +127,19 @@ public class ServiceBusListenerService : IServiceBusListenerService
                                     await mediator!.Send(new UpdateStoreSearchIndexViewCommand() { StoreTypeId = storeType.Id });
                                     break;
                                 case UpdateStoreCheckpointByIdCommand store:
-                                    await mediator!.Send(new UpdateStoreViewCommand() { StoreId = store.Id });
+                                    result = await mediator!.Send(new UpdateStoreViewCommand() { StoreId = store.Id });
                                     await mediator!.Send(new UpdateStoreSearchIndexViewCommand() { StoreId = store.Id });
                                     break;
                             }
+
+                            if (result is { IsSuccess: true, Value: { } })
+                            {
+                                var events = result.Value.Select(s =>
+                                    new EventGridEvent("SubmissionViewUpdate", "SubmissionViewUpdate", "1.0", s));
+
+                                await _submissionViewTopic.SendEventsAsync(events);
+                            }
+
                         }
                         catch (Exception ex)
                         {
