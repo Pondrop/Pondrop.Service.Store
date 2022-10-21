@@ -1,5 +1,7 @@
 using AspNetCore.Proxy;
 using AspNetCore.Proxy.Options;
+using Azure;
+using Azure.Search.Documents.Indexes;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +27,7 @@ public class StoreController : ControllerBase
     private readonly StoreSearchIndexConfiguration _searchIdxConfig;
     private readonly ITokenProvider _jwtTokenProvider;
     private readonly ILogger<StoreController> _logger;
-
+    private readonly SearchIndexerClient _searchIndexerClient;
     private readonly HttpProxyOptions _searchProxyOptions;
 
     public StoreController(
@@ -42,6 +44,8 @@ public class StoreController : ControllerBase
         _searchIdxConfig = searchIdxConfig.Value;
         _jwtTokenProvider = jWTTokenProvider;
         _logger = logger;
+
+        _searchIndexerClient = new SearchIndexerClient(new Uri(_searchIdxConfig.BaseUrl), new AzureKeyCredential(_searchIdxConfig.ManagementKey));
 
         _searchProxyOptions = HttpProxyOptionsBuilder
             .Instance
@@ -210,5 +214,20 @@ public class StoreController : ControllerBase
             $"docs?api-version=2021-04-30-Preview&{queryString}");
 
         return this.HttpProxyAsync(url, _searchProxyOptions);
+    }
+
+
+    [HttpGet]
+    [Route("indexer/run")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RunIndexer()
+    {
+        var response = await _searchIndexerClient.RunIndexerAsync(_searchIdxConfig.IndexerName);
+
+        if (response.IsError)
+            return new BadRequestObjectResult(response.ReasonPhrase);
+
+        return new AcceptedResult();
     }
 }
