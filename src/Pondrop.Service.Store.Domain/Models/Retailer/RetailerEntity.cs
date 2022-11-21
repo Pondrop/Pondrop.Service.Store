@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
-using Pondrop.Service.Store.Domain.Events;
+using Pondrop.Service.Events;
+using Pondrop.Service.Models;
 using Pondrop.Service.Store.Domain.Events.Retailer;
 
 namespace Pondrop.Service.Store.Domain.Models;

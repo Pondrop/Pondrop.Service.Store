@@ -13,16 +13,20 @@ using Pondrop.Service.Store.Api.Middleware;
 using Pondrop.Service.Store.Api.Models;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Api.Services.Interfaces;
-using Pondrop.Service.Store.Application.Interfaces;
-using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
-using Pondrop.Service.Store.Infrastructure.CosmosDb;
-using Pondrop.Service.Store.Infrastructure.Dapr;
-using Pondrop.Service.Store.Infrastructure.ServiceBus;
+using Pondrop.Service.Infrastructure.CosmosDb;
+using Pondrop.Service.Infrastructure.Dapr;
+using Pondrop.Service.Infrastructure.ServiceBus;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Pondrop.Service.Interfaces;
+using Pondrop.Service.Models;
+using Pondrop.Service.Interfaces.Services;
+using Pondrop.Service.Product.Application.Models;
+using Pondrop.Service.Events;
+using Pondrop.Service.Store.Domain.Events.Retailer;
 
 JsonConvert.DefaultSettings = () => new JsonSerializerSettings()
 {
@@ -71,7 +75,8 @@ services
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
 
-services.AddSwaggerGen(c => {
+services.AddSwaggerGen(c =>
+{
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
     {
         Name = "Authorization",
@@ -96,7 +101,8 @@ services.AddSwaggerGen(c => {
 services.AddAutoMapper(
     typeof(Result<>),
     typeof(EventEntity),
-    typeof(EventRepository));
+    typeof(EventRepository),
+    typeof(CreateRetailer));
 services.AddMediatR(
     typeof(Result<>));
 services.AddFluentValidation(config =>
@@ -140,7 +146,7 @@ services.AddHostedService<RebuildMaterializeViewHostedService>();
 services.AddSingleton<IRebuildCheckpointQueueService, RebuildCheckpointQueueService>();
 
 services.AddSingleton<IAddressService, AddressService>();
-services.AddSingleton<IUserService, UserService>();
+var serviceCollection = services.AddSingleton<IUserService, UserService>();
 services.AddSingleton<IEventRepository, EventRepository>();
 services.AddSingleton<ICheckpointRepository<RetailerEntity>, CheckpointRepository<RetailerEntity>>();
 services.AddSingleton<ICheckpointRepository<StoreTypeEntity>, CheckpointRepository<StoreTypeEntity>>();
@@ -150,6 +156,8 @@ services.AddSingleton<IContainerRepository<StoreSearchIndexViewRecord>, Containe
 services.AddSingleton<IDaprService, DaprService>();
 services.AddSingleton<IServiceBusService, ServiceBusService>();
 services.AddSingleton<ITokenProvider, JWTTokenProvider>();
+
+DefaultEventTypePayloadResolver.Init(typeof(CreateRetailer).Assembly);
 
 var app = builder.Build();
 var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();

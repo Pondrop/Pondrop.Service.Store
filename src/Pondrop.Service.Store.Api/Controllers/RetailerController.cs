@@ -1,10 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
+using Pondrop.Service.Interfaces;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
+
 using Pondrop.Service.Store.Application.Queries;
 using System.Net;
 

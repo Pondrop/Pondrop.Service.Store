@@ -1,3 +1,5 @@
+using Pondrop.Service.Events;
+
 namespace Pondrop.Service.Store.Domain.Events.Store;
 
 public record UpdateStoreAddress(
@@ -11,4 +13,3 @@ public record UpdateStoreAddress(
     string? Country,
     double? Latitude,
     double? Longitude) : EventPayload;
-    

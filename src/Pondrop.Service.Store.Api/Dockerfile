@@ -10,7 +10,6 @@ WORKDIR /src
 COPY ["src/Pondrop.Service.Store.Api/Pondrop.Service.Store.Api.csproj", "src/Pondrop.Service.Store.Api/"]
 COPY ["src/Pondrop.Service.Store.Application/Pondrop.Service.Store.Application.csproj", "src/Pondrop.Service.Store.Application/"]
 COPY ["src/Pondrop.Service.Store.Domain/Pondrop.Service.Store.Domain.csproj", "src/Pondrop.Service.Store.Domain/"]
-COPY ["src/Pondrop.Service.Store.Infrastructure/Pondrop.Service.Store.Infrastructure.csproj", "src/Pondrop.Service.Store.Infrastructure/"]
 RUN dotnet restore "src/Pondrop.Service.Store.Api/Pondrop.Service.Store.Api.csproj"
 COPY . .
 WORKDIR "/src/src/Pondrop.Service.Store.Api"

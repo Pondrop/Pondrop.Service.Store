@@ -12,7 +12,7 @@ using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.ApiControllers;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
+
 using Pondrop.Service.Store.Application.Queries;
 using Pondrop.Service.Store.Tests.Faker;
 using System;
@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Xunit;
+using Pondrop.Service.Interfaces;
 
 namespace Pondrop.Service.Store.Api.Tests
 {

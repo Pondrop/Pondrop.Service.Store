@@ -9,6 +9,7 @@ using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using System.Text;
 using Azure.Messaging.EventGrid;
+using Pondrop.Service.Product.Application.Models;
 
 namespace Pondrop.Service.Store.Api.Services;
 

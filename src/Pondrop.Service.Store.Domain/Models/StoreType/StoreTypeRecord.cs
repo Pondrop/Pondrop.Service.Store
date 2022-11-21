@@ -1,4 +1,6 @@
-﻿namespace Pondrop.Service.Store.Domain.Models;
+﻿using Pondrop.Service.Models;
+
+namespace Pondrop.Service.Store.Domain.Models;
 
 public record StoreTypeRecord(
         Guid Id,

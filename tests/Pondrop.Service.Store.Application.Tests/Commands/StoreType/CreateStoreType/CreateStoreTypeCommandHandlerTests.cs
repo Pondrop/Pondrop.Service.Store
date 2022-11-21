@@ -5,10 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
-using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
-using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Tests.Faker;
 using System;
@@ -16,6 +13,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Pondrop.Service.Interfaces;
+using Pondrop.Service.Interfaces.Services;
+using Pondrop.Service.Events;
 
 namespace Pondrop.Service.Store.Application.Tests.Commands.StoreType.CreateStoreType;
 

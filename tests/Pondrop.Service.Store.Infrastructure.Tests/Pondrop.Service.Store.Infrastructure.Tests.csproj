@@ -22,8 +22,4 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Pondrop.Service.Store.Infrastructure\Pondrop.Service.Store.Infrastructure.csproj" />
-    </ItemGroup>
 </Project>

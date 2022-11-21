@@ -1,6 +1,6 @@
 using Bogus;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Domain.Events.Store;
+
 using Pondrop.Service.Store.Domain.Models;
 using System;
 using System.Collections.Generic;

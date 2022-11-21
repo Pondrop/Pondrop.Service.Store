@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Pondrop.Service.Interfaces;
 using Pondrop.Service.Store.Api.Models;
 using Pondrop.Service.Store.Api.Services;
 using Pondrop.Service.Store.Api.Services.Interfaces;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Queries;
 
 namespace Pondrop.Service.Store.ApiControllers;

@@ -1,3 +1,4 @@
+using Pondrop.Service.Events;
 using Pondrop.Service.Store.Domain.Models;
 
 namespace Pondrop.Service.Store.Domain.Events.Store;

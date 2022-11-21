@@ -4,9 +4,9 @@ using FluentValidation.Results;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
+
 using Pondrop.Service.Store.Application.Queries;
-using Pondrop.Service.Store.Domain.Events;
+using Pondrop.Service.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Tests.Faker;
 using System;
@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Pondrop.Service.Interfaces;
 
 namespace Pondrop.Service.Store.Application.Tests.Commands.Retailer.CreateRetailer;
 

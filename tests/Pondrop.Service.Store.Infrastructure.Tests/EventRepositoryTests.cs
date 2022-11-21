@@ -4,11 +4,11 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Pondrop.Service.Store.Application.Interfaces;
 using Pondrop.Service.Store.Application.Models;
-using Pondrop.Service.Store.Infrastructure.CosmosDb;
+using Pondrop.Service.Infrastructure.CosmosDb;
 using System;
 using Xunit;
 
-namespace Pondrop.Service.Store.Infrastructure.Tests;
+namespace Pondrop.Service.Infrastructure.Tests;
 
 public class EventRepositoryTests
 {

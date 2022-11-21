@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos.Spatial;
+using Pondrop.Service.Models;
 
 namespace Pondrop.Service.Store.Domain.Models;
 

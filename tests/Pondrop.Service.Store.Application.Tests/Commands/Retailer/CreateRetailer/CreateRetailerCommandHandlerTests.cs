@@ -4,11 +4,11 @@ using FluentValidation.Results;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Pondrop.Service.Events;
+using Pondrop.Service.Interfaces;
+using Pondrop.Service.Interfaces.Services;
 using Pondrop.Service.Store.Application.Commands;
-using Pondrop.Service.Store.Application.Interfaces;
-using Pondrop.Service.Store.Application.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
-using Pondrop.Service.Store.Domain.Events;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Store.Tests.Faker;
 using System;
@@ -28,7 +28,7 @@ public class CreateRetailerCommandHandlerTests
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IValidator<CreateRetailerCommand>> _validatorMock;
     private readonly Mock<ILogger<CreateRetailerCommandHandler>> _loggerMock;
-    
+
     public CreateRetailerCommandHandlerTests()
     {
         _retailerUpdateConfigMock = new Mock<IOptions<RetailerUpdateConfiguration>>();
@@ -46,7 +46,7 @@ public class CreateRetailerCommandHandlerTests
             .Setup(x => x.CurrentUserName())
             .Returns("test/user");
     }
-    
+
     [Fact]
     public async void CreateRetailerCommand_ShouldSucceed()
     {
@@ -63,10 +63,10 @@ public class CreateRetailerCommandHandlerTests
             .Setup(x => x.Map<RetailerRecord>(It.IsAny<RetailerEntity>()))
             .Returns(item);
         var handler = GetCommandHandler();
-        
+
         // act
         var result = await handler.Handle(cmd, CancellationToken.None);
-        
+
         // assert
         Assert.True(result.IsSuccess);
         Assert.Equal(item, result.Value);
@@ -80,7 +80,7 @@ public class CreateRetailerCommandHandlerTests
             x => x.Map<RetailerRecord>(It.IsAny<RetailerEntity>()),
             Times.Once);
     }
-    
+
     [Fact]
     public async void CreateRetailerCommand_WhenInvalid_ShouldFail()
     {
@@ -89,12 +89,12 @@ public class CreateRetailerCommandHandlerTests
         var item = RetailerFaker.GetRetailerRecord(cmd);
         _validatorMock
             .Setup(x => x.Validate(cmd))
-            .Returns(new ValidationResult(new [] { new ValidationFailure() }));
+            .Returns(new ValidationResult(new[] { new ValidationFailure() }));
         var handler = GetCommandHandler();
-        
+
         // act
         var result = await handler.Handle(cmd, CancellationToken.None);
-        
+
         // assert
         Assert.False(result.IsSuccess);
         _validatorMock.Verify(
@@ -124,10 +124,10 @@ public class CreateRetailerCommandHandlerTests
             .Setup(x => x.Map<RetailerRecord>(It.IsAny<RetailerEntity>()))
             .Returns(item);
         var handler = GetCommandHandler();
-        
+
         // act
         var result = await handler.Handle(cmd, CancellationToken.None);
-        
+
         // assert
         Assert.False(result.IsSuccess);
         _validatorMock.Verify(
@@ -140,7 +140,7 @@ public class CreateRetailerCommandHandlerTests
             x => x.Map<RetailerRecord>(It.IsAny<RetailerEntity>()),
             Times.Never);
     }
-    
+
     [Fact]
     public async void CreateRetailerCommand_WhenException_ShouldFail()
     {
@@ -157,10 +157,10 @@ public class CreateRetailerCommandHandlerTests
             .Setup(x => x.Map<RetailerRecord>(It.IsAny<RetailerEntity>()))
             .Returns(item);
         var handler = GetCommandHandler();
-        
+
         // act
         var result = await handler.Handle(cmd, CancellationToken.None);
-        
+
         // assert
         Assert.False(result.IsSuccess);
         _validatorMock.Verify(
@@ -173,7 +173,7 @@ public class CreateRetailerCommandHandlerTests
             x => x.Map<RetailerRecord>(It.IsAny<RetailerEntity>()),
             Times.Never);
     }
-    
+
     private CreateRetailerCommandHandler GetCommandHandler() =>
         new CreateRetailerCommandHandler(
             _retailerUpdateConfigMock.Object,

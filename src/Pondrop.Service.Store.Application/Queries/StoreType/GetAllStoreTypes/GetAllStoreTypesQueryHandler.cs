@@ -2,7 +2,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Pondrop.Service.Store.Application.Interfaces;
+using Pondrop.Service.Interfaces;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 
@@ -12,7 +12,7 @@ public class GetAllStoreTypesQueryHandler : IRequestHandler<GetAllStoreTypesQuer
 {
     private readonly ICheckpointRepository<StoreTypeEntity> _viewRepository;
     private readonly IMapper _mapper;
-    private readonly IValidator<GetAllStoreTypesQuery> _validator;    
+    private readonly IValidator<GetAllStoreTypesQuery> _validator;
     private readonly ILogger<GetAllStoreTypesQueryHandler> _logger;
 
     public GetAllStoreTypesQueryHandler(
@@ -46,7 +46,7 @@ public class GetAllStoreTypesQueryHandler : IRequestHandler<GetAllStoreTypesQuer
             var storeTypeRecords = storeTypeEntities
                 .Select(i => _mapper.Map<StoreTypeRecord>(i))
                 .ToList();
-            
+
             result = Result<List<StoreTypeRecord>>.Success(storeTypeRecords);
         }
         catch (Exception ex)

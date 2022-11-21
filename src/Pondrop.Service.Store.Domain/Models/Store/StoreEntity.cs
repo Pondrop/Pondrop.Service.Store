@@ -1,6 +1,7 @@
 ﻿using Microsoft.Azure.Cosmos.Spatial;
 using Newtonsoft.Json;
-using Pondrop.Service.Store.Domain.Events;
+using Pondrop.Service.Events;
+using Pondrop.Service.Models;
 using Pondrop.Service.Store.Domain.Events.Store;
 using System.Spatial;
 
@@ -27,7 +28,7 @@ public record StoreEntity : EventEntity
         }
     }
 
-    public StoreEntity(string name, string status, string externalReferenceId, string phone, string email, string openHours,  Guid retailerId, Guid storeTypeId, string createdBy) : this()
+    public StoreEntity(string name, string status, string externalReferenceId, string phone, string email, string openHours, Guid retailerId, Guid storeTypeId, string createdBy) : this()
     {
         var create = new CreateStore(Guid.NewGuid(), name, status, phone, email, openHours, externalReferenceId, retailerId, storeTypeId);
         Apply(create, createdBy);

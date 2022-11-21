@@ -11,6 +11,7 @@ COPY ["src/Pondrop.Service.Store.Api/Pondrop.Service.Store.Api.csproj", "src/Pon
 COPY ["src/Pondrop.Service.Store.Application/Pondrop.Service.Store.Application.csproj", "src/Pondrop.Service.Store.Application/"]
 COPY ["src/Pondrop.Service.Store.Domain/Pondrop.Service.Store.Domain.csproj", "src/Pondrop.Service.Store.Domain/"]
 COPY ["src/Pondrop.Service.Store.Infrastructure/Pondrop.Service.Store.Infrastructure.csproj", "src/Pondrop.Service.Store.Infrastructure/"]
+RUN dotnet nuget add source "https://pkgs.dev.azure.com/PondropDevOps/_packaging/PondropDevOps/nuget/v3/index.json" --name "PondropInfrastructure" --username "user" --password "3sn7hxhu5n3jlg22cbojteotocsuccn257z5zqyat7btza6z4qbq" --store-password-in-clear-text
 RUN dotnet restore "src/Pondrop.Service.Store.Api/Pondrop.Service.Store.Api.csproj"
 COPY . .
 WORKDIR "/src/src/Pondrop.Service.Store.Api"

@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Pondrop.Service.Store.Application.Interfaces.Services;
+using Pondrop.Service.Interfaces.Services;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
