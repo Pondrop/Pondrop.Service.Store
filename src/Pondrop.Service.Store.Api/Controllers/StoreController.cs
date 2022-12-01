@@ -198,6 +198,15 @@ public class StoreController : ControllerBase
         return new AcceptedResult();
     }
 
+    [HttpPost]
+    [Route("rebuild/view")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public IActionResult RebuildView()
+    {
+        _mediator.Send(new RebuildStoreViewCommand());
+        return new AcceptedResult();
+    }
+
     [HttpGet, HttpPost]
     [Route("search")]
     public Task ProxySearchCatchAll()
