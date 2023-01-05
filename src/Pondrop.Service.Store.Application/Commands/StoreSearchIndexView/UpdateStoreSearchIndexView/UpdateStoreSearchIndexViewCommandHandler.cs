@@ -6,6 +6,7 @@ using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 using Pondrop.Service.Interfaces;
 using Pondrop.Service.Interfaces.Services;
+using Microsoft.Azure.Cosmos.Spatial;
 
 namespace Pondrop.Service.Store.Application.Commands;
 
@@ -64,7 +65,18 @@ public class UpdateStoreSearchIndexViewCommandHandler : IRequestHandler<UpdateSt
                     var storeView = _mapper.Map<StoreSearchIndexViewRecord>(i) with
                     {
                         Retailer = retailerLookup[i.RetailerId],
-                        StoreType = storeTypeLookup[i.StoreTypeId]
+                        StoreType = storeTypeLookup[i.StoreTypeId],
+                        AddressId = i.Addresses.FirstOrDefault()?.Id ?? Guid.Empty,
+                        AddressExternalReferenceId = i.Addresses.FirstOrDefault()?.ExternalReferenceId ?? string.Empty,
+                        AddressLine1 = i.Addresses.FirstOrDefault()?.AddressLine1 ?? string.Empty,
+                        AddressLine2 = i.Addresses.FirstOrDefault()?.AddressLine2 ?? string.Empty,
+                        Suburb = i.Addresses.FirstOrDefault()?.Suburb ?? string.Empty,
+                        State = i.Addresses.FirstOrDefault()?.State ?? string.Empty,
+                        Postcode = i.Addresses.FirstOrDefault()?.Postcode ?? string.Empty,
+                        Country = i.Addresses.FirstOrDefault()?.Country ?? string.Empty,
+                        Latitude = i.Addresses.FirstOrDefault()?.Latitude ?? 0,
+                        Longitude = i.Addresses.FirstOrDefault()?.Longitude ?? 0,
+                        LocationSort = i.Addresses.FirstOrDefault()?.LocationSort ?? new Point(0, 0),
                     };
 
                     var result = await _containerRepository.UpsertAsync(storeView);
