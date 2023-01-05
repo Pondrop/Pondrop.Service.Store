@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Pondrop.Service.Interfaces;
+using Pondrop.Service.Interfaces.Services;
 using Pondrop.Service.Store.Application.Models;
 using Pondrop.Service.Store.Domain.Models;
 
@@ -42,7 +43,14 @@ public class GetAllStoresQueryHandler : IRequestHandler<GetAllStoresQuery, Resul
 
         try
         {
-            var records = await _containerRepository.GetAllAsync();
+            var query = $"SELECT * FROM c";
+
+            if (request.Offset != -1 && request.Limit != -1)
+            {
+                query += $" OFFSET {request.Offset} LIMIT {request.Limit}";
+            }
+            
+            var records = await _containerRepository.QueryAsync(query);
             result = Result<List<StoreViewRecord>>.Success(records);
         }
         catch (Exception ex)

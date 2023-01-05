@@ -191,8 +191,8 @@ public record StoreEntity : EventEntity
 
     private void When(RemoveAddressFromStore removeItemFromList, string updatedBy, DateTime updatedUtc)
     {
-        var address = Addresses.Single(i => i.Id == removeItemFromList.Id);
-        Addresses.Remove(address);
+        var address = Addresses.FirstOrDefault(i => i.Id == removeItemFromList.Id);
+        Addresses = new List<StoreAddressRecord>();
 
         UpdatedBy = updatedBy;
         UpdatedUtc = updatedUtc;
