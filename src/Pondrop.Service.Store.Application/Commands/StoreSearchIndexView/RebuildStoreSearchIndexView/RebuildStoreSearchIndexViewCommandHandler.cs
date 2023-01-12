@@ -67,6 +67,7 @@ public class RebuildStoreSearchIndexViewCommandHandler : IRequestHandler<Rebuild
                         AddressLine1 = i.Addresses.FirstOrDefault()?.AddressLine1 ?? string.Empty,
                         AddressLine2 = i.Addresses.FirstOrDefault()?.AddressLine2 ?? string.Empty,
                         Suburb = i.Addresses.FirstOrDefault()?.Suburb ?? string.Empty,
+                        IsCommunityStore = i.IsCommunityStore,
                         State = i.Addresses.FirstOrDefault()?.State ?? string.Empty,
                         Postcode = i.Addresses.FirstOrDefault()?.Postcode ?? string.Empty,
                         Country = i.Addresses.FirstOrDefault()?.Country ?? string.Empty,

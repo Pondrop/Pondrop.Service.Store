@@ -73,6 +73,7 @@ public class UpdateStoreSearchIndexViewCommandHandler : IRequestHandler<UpdateSt
                         Suburb = i.Addresses.FirstOrDefault()?.Suburb ?? string.Empty,
                         State = i.Addresses.FirstOrDefault()?.State ?? string.Empty,
                         Postcode = i.Addresses.FirstOrDefault()?.Postcode ?? string.Empty,
+                        IsCommunityStore = i.IsCommunityStore,
                         Country = i.Addresses.FirstOrDefault()?.Country ?? string.Empty,
                         Latitude = i.Addresses.FirstOrDefault()?.Latitude ?? 0,
                         Longitude = i.Addresses.FirstOrDefault()?.Longitude ?? 0,

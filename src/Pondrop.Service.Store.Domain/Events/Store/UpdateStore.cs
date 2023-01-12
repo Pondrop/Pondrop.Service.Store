@@ -9,5 +9,6 @@ public record UpdateStore(
     string? Phone,
     string? Email,
     string? OpenHours,
+    bool IsCommunityStore,
     Guid? RetailerId,
     Guid? StoreTypeId) : EventPayload;

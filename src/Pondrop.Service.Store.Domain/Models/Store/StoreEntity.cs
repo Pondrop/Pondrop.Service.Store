@@ -18,6 +18,7 @@ public record StoreEntity : EventEntity
         Addresses = new List<StoreAddressRecord>();
         RetailerId = Guid.Empty;
         StoreTypeId = Guid.Empty;
+        IsCommunityStore = false;
     }
 
     public StoreEntity(IEnumerable<IEvent> events) : this()
@@ -28,9 +29,9 @@ public record StoreEntity : EventEntity
         }
     }
 
-    public StoreEntity(string name, string status, string externalReferenceId, string phone, string email, string openHours, Guid retailerId, Guid storeTypeId, string createdBy) : this()
+    public StoreEntity(string name, string status, string externalReferenceId, string phone, string email, string openHours, bool isCommunityStore, Guid retailerId, Guid storeTypeId, string createdBy) : this()
     {
-        var create = new CreateStore(Guid.NewGuid(), name, status, phone, email, openHours, externalReferenceId, retailerId, storeTypeId);
+        var create = new CreateStore(Guid.NewGuid(), name, status, phone, email, openHours, externalReferenceId, isCommunityStore, retailerId, storeTypeId);
         Apply(create, createdBy);
     }
 
@@ -48,6 +49,9 @@ public record StoreEntity : EventEntity
 
     [JsonProperty(PropertyName = "openHours")]
     public string OpenHours { get; private set; }
+
+    [JsonProperty(PropertyName = "isCommunityStore")]
+    public bool IsCommunityStore { get; private set; }
 
     [JsonProperty(PropertyName = "externalReferenceId")]
     public string ExternalReferenceId { get; private set; }
@@ -110,6 +114,7 @@ public record StoreEntity : EventEntity
         Email = create.Email;
         OpenHours = create.OpenHours;
         ExternalReferenceId = create.ExternalReferenceId;
+        IsCommunityStore = create.IsCommunityStore;
         RetailerId = create.RetailerId;
         StoreTypeId = create.StoreTypeId;
         CreatedBy = UpdatedBy = createdBy;
@@ -122,6 +127,7 @@ public record StoreEntity : EventEntity
         var oldStatus = Status;
         var oldRetailerId = RetailerId;
         var oldStoreTypeId = StoreTypeId;
+        var oldIsCommunityStore = IsCommunityStore;
 
         Name = update.Name ?? Name;
         Status = update.Status ?? Status;
@@ -130,10 +136,12 @@ public record StoreEntity : EventEntity
         OpenHours = update.OpenHours ?? OpenHours;
         RetailerId = update.RetailerId ?? RetailerId;
         StoreTypeId = update.StoreTypeId ?? StoreTypeId;
+        IsCommunityStore = update.IsCommunityStore;
 
         if (oldName != Name ||
             oldStatus != Status ||
             oldRetailerId != StoreTypeId ||
+            oldIsCommunityStore != IsCommunityStore ||
             oldStoreTypeId != StoreTypeId)
         {
             UpdatedBy = createdBy;

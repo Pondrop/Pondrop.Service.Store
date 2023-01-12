@@ -12,8 +12,8 @@ public class CreateStoreCommand : IRequest<Result<StoreRecord>>
     public string Phone { get; init; } = string.Empty;
     public string OpenHours { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
+    public bool IsCommunityStore { get; init; } = false;
     public AddressRecord? Address { get; init; } = default;
-
     public Guid RetailerId { get; init; } = Guid.Empty;
     public Guid StoreTypeId { get; init; } = Guid.Empty;
 }

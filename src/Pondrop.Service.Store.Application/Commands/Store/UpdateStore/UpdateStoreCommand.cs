@@ -12,6 +12,7 @@ public class UpdateStoreCommand : IRequest<Result<StoreRecord>>
     public string? Phone { get; init; } = null;
     public string? Email { get; init; } = null;
     public string? OpenHours { get; init; } = null;
+    public bool IsCommunityStore { get; init; } = false;
 
     public Guid? RetailerId { get; init; } = null;
     public Guid? StoreTypeId { get; init; } = null;
