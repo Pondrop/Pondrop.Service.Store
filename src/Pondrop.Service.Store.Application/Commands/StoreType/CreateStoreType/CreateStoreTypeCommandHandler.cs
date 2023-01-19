@@ -49,7 +49,7 @@ public class CreateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity
 
         try
         {
-            var storeType = new StoreTypeEntity(command.Name, command.ExternalReferenceId, _userService.CurrentUserName());
+            var storeType = new StoreTypeEntity(command.Name, command.ExternalReferenceId, command.Sector, _userService.CurrentUserName());
             var success = await _eventRepository.AppendEventsAsync(storeType.StreamId, 0, storeType.GetEvents());
 
             await Task.WhenAll(

@@ -8,4 +8,5 @@ public class UpdateStoreTypeCommand : IRequest<Result<StoreTypeRecord>>
 {
     public Guid Id { get; init; } = Guid.Empty;
     public string Name { get; init; } = string.Empty;
+    public string Sector { get; init; } = string.Empty;
 }

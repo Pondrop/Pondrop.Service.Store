@@ -6,13 +6,14 @@ public record StoreTypeRecord(
         Guid Id,
         string ExternalReferenceId,
         string Name,
+        string Sector,
         string CreatedBy,
         string UpdatedBy,
         DateTime CreatedUtc,
         DateTime UpdatedUtc)
     : AuditRecord(CreatedBy, UpdatedBy, CreatedUtc, UpdatedUtc)
 {
-    public StoreTypeRecord() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, string.Empty, DateTime.MinValue, DateTime.MinValue)
+    public StoreTypeRecord() : this(Guid.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, DateTime.MinValue, DateTime.MinValue)
     {
     }
 }

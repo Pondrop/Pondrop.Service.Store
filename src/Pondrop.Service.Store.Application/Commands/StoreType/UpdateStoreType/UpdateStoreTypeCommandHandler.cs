@@ -58,7 +58,7 @@ public class UpdateStoreTypeCommandHandler : DirtyCommandHandler<StoreTypeEntity
 
             if (storeTypeEntity is not null)
             {
-                var evtPayload = new UpdateStoreType(command.Name);
+                var evtPayload = new UpdateStoreType(command.Name, command.Sector);
                 var createdBy = _userService.CurrentUserName();
 
                 var success = await UpdateStreamAsync(storeTypeEntity, evtPayload, createdBy);

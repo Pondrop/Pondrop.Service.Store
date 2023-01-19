@@ -7,6 +7,7 @@ public class CreateStoreTypeCommandHandlerValidator : AbstractValidator<CreateSt
     public CreateStoreTypeCommandHandlerValidator()
     {
         RuleFor(x => x.Name).NotEmpty();
+        RuleFor(x => x.Sector).NotEmpty();
         RuleFor(x => x.ExternalReferenceId).NotEmpty();
     }
 }

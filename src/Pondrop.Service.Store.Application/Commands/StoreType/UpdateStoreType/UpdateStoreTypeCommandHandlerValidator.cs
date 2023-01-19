@@ -8,5 +8,6 @@ public class UpdateStoreTypeCommandHandlerValidator : AbstractValidator<UpdateSt
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Name).NotEmpty();
+        RuleFor(x => x.Sector).NotEmpty();
     }
 }

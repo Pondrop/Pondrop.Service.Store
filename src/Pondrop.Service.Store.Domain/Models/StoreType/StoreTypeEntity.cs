@@ -12,6 +12,7 @@ public record StoreTypeEntity : EventEntity
         Id = Guid.Empty;
         Name = string.Empty;
         ExternalReferenceId = string.Empty;
+        Sector = string.Empty;
     }
 
     public StoreTypeEntity(IEnumerable<IEvent> events) : this()
@@ -22,15 +23,18 @@ public record StoreTypeEntity : EventEntity
         }
     }
     
-    public StoreTypeEntity(string name, string externalReferenceId, string createdBy) : this()
+    public StoreTypeEntity(string name, string externalReferenceId, string sector, string createdBy) : this()
     {
-        var create = new CreateStoreType(Guid.NewGuid(), externalReferenceId, name);
+        var create = new CreateStoreType(Guid.NewGuid(), externalReferenceId, name, sector);
         Apply(create, createdBy);
     }
 
     [JsonProperty(PropertyName = "name")]
     public string Name { get; private set; }
-    
+
+    [JsonProperty(PropertyName = "sector")]
+    public string Sector { get; private set; }
+
     [JsonProperty(PropertyName = "externalReferenceId")]
     public string ExternalReferenceId { get; private set; }
     
@@ -72,6 +76,7 @@ public record StoreTypeEntity : EventEntity
         Id = create.Id;
         Name = create.Name;
         ExternalReferenceId = create.ExternalReferenceId;
+        Sector = create.Sector;
         CreatedBy = createdBy;
         CreatedUtc = createdUtc;
     }
@@ -79,5 +84,6 @@ public record StoreTypeEntity : EventEntity
     private void When(UpdateStoreType update)
     {
         Name = update.Name;
+        Sector = update.Sector;
     }
 }
