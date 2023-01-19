@@ -41,6 +41,20 @@ var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 var configuration = builder.Configuration;
 
+var AllowedOrigins = "allowedOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: AllowedOrigins,
+        policy =>
+        {
+            policy.WithOrigins("https://admin-portal.ashyocean-bde16918.australiaeast.azurecontainerapps.io",
+                "http://localhost:3000")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
+
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
@@ -164,6 +178,7 @@ var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>()
 
 // Configure the HTTP request pipeline.
 
+app.UseCors(AllowedOrigins);
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseSwaggerDocumentation(provider);
 
